@@ -26,7 +26,7 @@ export class MessageRepository {
 
   /** メッセージ登録 */
   async putMessage(
-    item: Omit<MessageItem, "MessageNo" | "Dummy">,
+    item: Omit<MessageItem, "MessageNo" | "Dummy" | "CreatedAt">,
     messageNo: number
   ) {
     const params: PutCommandInput = {
@@ -34,8 +34,9 @@ export class MessageRepository {
       Item: {
         ...item,
         MessageNo: messageNo,
+        CreatedAt: Math.floor(Date.now() / 1000), // Unix timestamp
         Dummy: "ALL",
-      },
+      } satisfies MessageItem,
     };
 
     const command = new PutCommand(params);
@@ -71,6 +72,11 @@ export class MessageRepository {
 
     const result = await this.docClient.send(command);
     return (result.Items || []) as MessageItem[];
+  }
+
+  /** lastから最新まで全て取得 */
+  async getMessagesFromLast(last: number, max: number, limit: number = 100) {
+    // Math.min(max - last, limit) 件までmaxから取得
   }
 
   // /** 単一メッセージ取得 */

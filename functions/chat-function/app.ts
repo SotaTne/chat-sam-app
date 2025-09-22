@@ -25,7 +25,7 @@ export async function lambdaHandler(
   const path = event.path;
   const params = event.pathParameters;
   // const header = event.headers;
-  const body = event.body;
+  const body: Response = JSON.parse(event.body || "null") || null;
 
   const method = event.httpMethod;
   const sessionId = getSession(event);
@@ -66,16 +66,15 @@ export async function lambdaHandler(
 
   try {
     // auth all
-    const result = handlePath<handlerArgs, APIGatewayProxyResult>(
-      method,
-      path,
-      [
-        { fn: getIndexHandler, ...INDEX_GET },
-        { fn: getMessagesHandler, ...MESSAGES_GET },
-        { fn: getMessagesLastHandler, ...MESSAGES_LATEST_GET },
-        { fn: postMessageHandler, ...MESSAGES_POST },
-      ]
-    );
+    const result = await handlePath<
+      handlerArgs,
+      APIGatewayProxyResult | Promise<APIGatewayProxyResult>
+    >(method, path, [
+      { fn: getIndexHandler, ...INDEX_GET },
+      { fn: getMessagesHandler, ...MESSAGES_GET },
+      { fn: getMessagesLastHandler, ...MESSAGES_LATEST_GET },
+      { fn: postMessageHandler, ...MESSAGES_POST },
+    ]);
     if (result) {
       if (needSetCookie) {
         return setSessionId(result, userSessionId!);

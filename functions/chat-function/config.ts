@@ -13,7 +13,7 @@ type PathConfig = {
 export type handlerArgs = {
   params: APIGatewayProxyEventPathParameters | null;
   sessionId: string;
-  body: string | null;
+  body: any | null;
 };
 
 export const INDEX_GET: PathConfig = { method: "GET", path: /^\/$/ };
