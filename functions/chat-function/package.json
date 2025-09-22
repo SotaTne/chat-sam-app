@@ -1,0 +1,23 @@
+{
+  "name": "chat-function",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.150",
+    "@types/node": "^24.1.0",
+    "esbuild": "^0.25.6",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.856.0",
+    "@aws-sdk/lib-dynamodb": "^3.856.0"
+  }
+}

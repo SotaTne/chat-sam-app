@@ -1,0 +1,227 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/aws/serverless-application-model/main/samtranslator/schema/schema.json
+
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Description: Chat SAM app stack — メッセージ閲覧/投稿、セッション管理、定期 Bot 生成 を仕様どおり実装
+
+Globals:
+  Function:
+    Timeout: 3 # 秒
+    MemorySize: 256 # MB
+    Environment:
+      Variables:
+        MESSAGE_TABLE: !Ref MessageTable
+        MESSAGE_COUNTER_TABLE: !Ref MessageCounterTable
+        SESSION_TABLE: !Ref SessionTable
+        GENERATED_MESSAGE_TABLE: !Ref GeneratedMessageTable
+        DUMMY_VALUE: "ALL"
+        CREATED_AT_GSI: CreatedAtIndex
+
+Resources:
+  # ------------------------
+  # Chat Lambda
+  # ------------------------
+  ChatFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/chat-function
+      Handler: app.lambdaHandler
+      Runtime: nodejs22.x
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MessageTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SessionTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref GeneratedMessageTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MessageCounterTable
+      Events:
+        GetMessages:
+          Type: HttpApi
+          Properties:
+            Path: /messages
+            Method: GET
+        PostMessage:
+          Type: HttpApi
+          Properties:
+            Path: /messages
+            Method: POST
+        GetLatestMessages:
+          Type: HttpApi
+          Properties:
+            Path: /messages/latest
+            Method: GET
+        StaticIndex:
+          Type: HttpApi
+          Properties:
+            Path: /
+            Method: GET
+
+  ChatFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${ChatFunction}"
+      RetentionInDays: 3
+
+  # ------------------------
+  # Session Table
+  # ------------------------
+  SessionTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: SessionTable
+      AttributeDefinitions:
+        - AttributeName: SessionId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: SessionId
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: ExpirationDate
+        Enabled: true
+
+  # ------------------------
+  # Message Table
+  # ------------------------
+  MessageTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: MessageTable
+      AttributeDefinitions:
+        - AttributeName: MessageNo
+          AttributeType: N
+        - AttributeName: CreatedAt
+          AttributeType: N
+        - AttributeName: Dummy
+          AttributeType: S
+      KeySchema:
+        - AttributeName: Dummy
+          KeyType: HASH
+        - AttributeName: MessageNo
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+      GlobalSecondaryIndexes:
+        - IndexName: CreatedAtIndex
+          KeySchema:
+            - AttributeName: Dummy
+              KeyType: HASH
+            - AttributeName: CreatedAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  # ------------------------
+  # Message Counter Table
+  # ------------------------
+  MessageCounterTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: MessageCounterTable
+      AttributeDefinitions:
+        - AttributeName: CounterId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: CounterId
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  # ------------------------
+  # Generated Message Table
+  # ------------------------
+  GeneratedMessageTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: GeneratedMessageTable
+      AttributeDefinitions:
+        - AttributeName: GeneratedMessageId
+          AttributeType: S
+        - AttributeName: CreatedAt
+          AttributeType: N
+      KeySchema:
+        - AttributeName: GeneratedMessageId
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  # ------------------------
+  # Generate Lambda
+  # ------------------------
+  GenerateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/generate-function
+      Handler: app.lambdaHandler
+      Runtime: nodejs22.x
+      Environment:
+        Variables:
+          MESSAGE_TABLE: !Ref MessageTable
+          CREATED_AT_GSI: CreatedAtIndex
+          DUMMY_VALUE: "ALL"
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref MessageTable
+
+  GenerateFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${GenerateFunction}"
+      RetentionInDays: 3
+
+  # ------------------------
+  # Put Generated Message Lambda
+  # ------------------------
+  PutDataToGenerated:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/put-generate-function
+      Handler: app.lambdaHandler
+      Runtime: nodejs22.x
+      Environment:
+        Variables:
+          GENERATED_MESSAGE_TABLE: !Ref GeneratedMessageTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GeneratedMessageTable
+
+  PutDataToGeneratedLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${PutDataToGenerated}"
+      RetentionInDays: 3
+
+  # ------------------------
+  # Hourly StateMachine
+  # ------------------------
+  GenerateHourMessage:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Events:
+        HourlyTradingSchedule:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: rate(6 hour)
+            FlexibleTimeWindow:
+              Mode: FLEXIBLE
+              MaximumWindowInMinutes: 5
+            ScheduleExpressionTimezone: Asia/Tokyo
+      DefinitionSubstitutions:
+        GenerateFunctionArn: !GetAtt GenerateFunction.Arn
+        PutDataToGeneratedArn: !GetAtt PutDataToGenerated.Arn
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GenerateFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref PutDataToGenerated
+      DefinitionUri: statemachine/generate.asl.json
+
+Outputs:
+  ChatApiMessagesGet:
+    Value: !Sub "GET /messages"
+  MessageTableName:
+    Value: !Ref MessageTable
+  GeneratedMessageTableName:
+    Value: !Ref GeneratedMessageTable
+  StateMachineArn:
+    Value: !Ref GenerateHourMessage
