@@ -2,7 +2,7 @@
 
 import { APIGatewayProxyResult } from "aws-lambda";
 import { handlerArgs } from "../config";
-import { putMessage } from "../usecase/put-message";
+import { PutMessage } from "../usecase/put-message";
 
 export async function postMessageHandler(
   args: handlerArgs
@@ -32,7 +32,7 @@ export async function postMessageHandler(
     } satisfies APIGatewayProxyResult;
   }
 
-  await putMessage({
+  await PutMessage({
     UserId: args.sessionId,
     Content: body.contents,
   });

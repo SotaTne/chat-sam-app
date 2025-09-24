@@ -1,0 +1,161 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: "Chat SAM app stack \u2014 \u30E1\u30C3\u30BB\u30FC\u30B8\u95B2\u89A7\
+  /\u6295\u7A3F\u3001\u30BB\u30C3\u30B7\u30E7\u30F3\u7BA1\u7406\u3001\u5B9A\u671F\
+  \ Bot \u751F\u6210 \u3092\u4ED5\u69D8\u3069\u304A\u308A\u5B9F\u88C5"
+Globals:
+  Function:
+    Timeout: 3
+    MemorySize: 256
+    Environment:
+      Variables:
+        MESSAGE_TABLE:
+          Ref: MessageTable
+        MESSAGE_COUNTER_TABLE:
+          Ref: MessageCounterTable
+        SESSION_TABLE:
+          Ref: SessionTable
+        GENERATED_MESSAGE_TABLE:
+          Ref: GeneratedMessageTable
+        DUMMY_VALUE: ALL
+        CREATED_AT_GSI: CreatedAtIndex
+Resources:
+  ChatFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ChatFunction
+      Handler: app.lambdaHandler
+      Runtime: nodejs20.x
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: MessageTable
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: SessionTable
+      - DynamoDBReadPolicy:
+          TableName:
+            Ref: GeneratedMessageTable
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: MessageCounterTable
+      Events:
+        GetMessages:
+          Type: Api
+          Properties:
+            Path: /messages
+            Method: GET
+        PostMessage:
+          Type: Api
+          Properties:
+            Path: /messages
+            Method: POST
+        GetLatestMessages:
+          Type: Api
+          Properties:
+            Path: /messages/latest
+            Method: GET
+        StaticIndex:
+          Type: Api
+          Properties:
+            Path: /
+            Method: GET
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+        - app.ts
+        Minify: true
+        Target: es2020
+      SamResourceId: ChatFunction
+  ChatFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${ChatFunction}
+      RetentionInDays: 3
+  SessionTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: SessionTable
+      AttributeDefinitions:
+      - AttributeName: SessionId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: SessionId
+        KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: ExpirationDate
+        Enabled: true
+  MessageTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: MessageTable
+      AttributeDefinitions:
+      - AttributeName: MessageNo
+        AttributeType: N
+      - AttributeName: CreatedAt
+        AttributeType: N
+      - AttributeName: Dummy
+        AttributeType: S
+      KeySchema:
+      - AttributeName: Dummy
+        KeyType: HASH
+      - AttributeName: MessageNo
+        KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+      GlobalSecondaryIndexes:
+      - IndexName: CreatedAtIndex
+        KeySchema:
+        - AttributeName: Dummy
+          KeyType: HASH
+        - AttributeName: CreatedAt
+          KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+  MessageCounterTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: MessageCounterTable
+      AttributeDefinitions:
+      - AttributeName: CounterId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: CounterId
+        KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+  GeneratedMessageTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: GeneratedMessageTable
+      AttributeDefinitions:
+      - AttributeName: GeneratedMessageId
+        AttributeType: S
+      - AttributeName: CreatedAt
+        AttributeType: N
+      - AttributeName: Dummy
+        AttributeType: S
+      KeySchema:
+      - AttributeName: GeneratedMessageId
+        KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      GlobalSecondaryIndexes:
+      - IndexName: CreatedAtIndex
+        KeySchema:
+        - AttributeName: Dummy
+          KeyType: HASH
+        - AttributeName: CreatedAt
+          KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+Outputs:
+  ChatApiMessagesGet:
+    Value:
+      Fn::Sub: GET /messages
+  MessageTableName:
+    Value:
+      Ref: MessageTable
+  GeneratedMessageTableName:
+    Value:
+      Ref: GeneratedMessageTable

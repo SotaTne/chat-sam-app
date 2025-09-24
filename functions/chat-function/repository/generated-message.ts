@@ -41,16 +41,16 @@ export class GeneratedMessageRepository {
   async getLatestMessages(limit: number = 100) {
     const command = new QueryCommand({
       TableName: this.tableName,
-      IndexName: "CreatedAtIndex", // GSI がある場合
-      KeyConditionExpression: "Dummy = :dummy", // Dummy などがある場合
+      IndexName: "CreatedAtIndex",
+      KeyConditionExpression: "Dummy = :dummy",
       ExpressionAttributeValues: {
         ":dummy": "ALL",
       },
-      ScanIndexForward: false,
+      ScanIndexForward: false, // 降順
       Limit: limit,
     });
 
     const result = await this.docClient.send(command);
-    return (result.Items || []) as GeneratedMessageItem[];
+    return (result.Items ?? []) as GeneratedMessageItem[];
   }
 }

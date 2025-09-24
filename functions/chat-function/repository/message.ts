@@ -50,7 +50,8 @@ export class MessageRepository {
   async getMessagesByPage(page: number, perPage: number, max: number) {
     if (page < 1) throw new Error("page must be >= 1");
     if (perPage < 1) throw new Error("perPage must be >= 1");
-    if (max < 1) throw new Error("max must be >= 1");
+    if (max < 0) throw new Error("max must be >= 0");
+    if (max < (page - 1) * perPage + 1) return []; // 取得範囲外
 
     const high = Math.max(max - (page - 1) * perPage, 1); // そのページで最も大きい MessageNo
     const low = Math.max(high - perPage + 1, 1); // そのページで最も小さい MessageNo
@@ -71,12 +72,45 @@ export class MessageRepository {
     });
 
     const result = await this.docClient.send(command);
-    return (result.Items || []) as MessageItem[];
+    return (result.Items ?? []) as MessageItem[];
   }
+  /**
+   * @var last 前回取得した最新の MessageNo
+   * @var max 現在の最新の MessageNo
+   * @var limit 取得上限（デフォルト100件）
+   */
+  /** lastから最新まで全て取得 */ //
+  async getMessagesFromLast(
+    last: number,
+    max: number,
+    limit: number = 100
+  ): Promise<{ data: MessageItem[]; isGetAll: boolean }> {
+    if (last >= max) return { data: [], isGetAll: true };
+    if (last < 0) throw new Error("last must be >= 0");
+    if (max < 0) throw new Error("max must be >= 0");
+    if (limit < 1) throw new Error("limit must be >= 1");
 
-  /** lastから最新まで全て取得 */
-  async getMessagesFromLast(last: number, max: number, limit: number = 100) {
-    // Math.min(max - last, limit) 件までmaxから取得
+    // 取得件数を制限
+    const count = Math.min(max - last, limit);
+    const high = last + count;
+
+    const command = new QueryCommand({
+      TableName: this.table_name,
+      KeyConditionExpression:
+        "Dummy = :dummy AND MessageNo BETWEEN :low AND :high",
+      ExpressionAttributeValues: {
+        ":dummy": "ALL",
+        ":low": last + 1, // last より新しいもの
+        ":high": high, // 上限
+      },
+      ScanIndexForward: true, // 昇順で取得（古い→新しい）
+    });
+
+    const result = await this.docClient.send(command);
+    return {
+      data: (result.Items ?? []) as MessageItem[],
+      isGetAll: count === max - last,
+    };
   }
 
   // /** 単一メッセージ取得 */

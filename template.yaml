@@ -27,7 +27,7 @@ Resources:
     Properties:
       CodeUri: functions/chat-function
       Handler: app.lambdaHandler
-      Runtime: nodejs22.x
+      Runtime: nodejs20.x
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref MessageTable
@@ -39,25 +39,32 @@ Resources:
             TableName: !Ref MessageCounterTable
       Events:
         GetMessages:
-          Type: HttpApi
+          Type: Api
           Properties:
             Path: /messages
             Method: GET
         PostMessage:
-          Type: HttpApi
+          Type: Api
           Properties:
             Path: /messages
             Method: POST
         GetLatestMessages:
-          Type: HttpApi
+          Type: Api
           Properties:
             Path: /messages/latest
             Method: GET
         StaticIndex:
-          Type: HttpApi
+          Type: Api
           Properties:
             Path: /
             Method: GET
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        EntryPoints:
+          - app.ts
 
   ChatFunctionLogGroup:
     Type: AWS::Logs::LogGroup
@@ -140,81 +147,92 @@ Resources:
           AttributeType: S
         - AttributeName: CreatedAt
           AttributeType: N
+        - AttributeName: Dummy
+          AttributeType: S
       KeySchema:
         - AttributeName: GeneratedMessageId
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
+      GlobalSecondaryIndexes:
+        - IndexName: CreatedAtIndex
+          KeySchema:
+            - AttributeName: Dummy # 固定値 ("ALL") を入れる
+              KeyType: HASH
+            - AttributeName: CreatedAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
 
-  # ------------------------
-  # Generate Lambda
-  # ------------------------
-  GenerateFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: functions/generate-function
-      Handler: app.lambdaHandler
-      Runtime: nodejs22.x
-      Environment:
-        Variables:
-          MESSAGE_TABLE: !Ref MessageTable
-          CREATED_AT_GSI: CreatedAtIndex
-          DUMMY_VALUE: "ALL"
-      Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref MessageTable
+  # # ------------------------
+  # # Generate Lambda
+  # # ------------------------
+  # GenerateFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     CodeUri: functions/generate-function
+  #     Handler: app.lambdaHandler
+  #     Runtime: nodejs20.x
+  #     Environment:
+  #       Variables:
+  #         MESSAGE_TABLE: !Ref MessageTable
+  #         CREATED_AT_GSI: CreatedAtIndex
+  #         DUMMY_VALUE: "ALL"
+  #     Policies:
+  #       - DynamoDBReadPolicy:
+  #           TableName: !Ref MessageTable
 
-  GenerateFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${GenerateFunction}"
-      RetentionInDays: 3
+  # GenerateFunctionLogGroup:
+  #   Type: AWS::Logs::LogGroup
+  #   Properties:
+  #     LogGroupName: !Sub "/aws/lambda/${GenerateFunction}"
+  #     RetentionInDays: 3
 
-  # ------------------------
-  # Put Generated Message Lambda
-  # ------------------------
-  PutDataToGenerated:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: functions/put-generate-function
-      Handler: app.lambdaHandler
-      Runtime: nodejs22.x
-      Environment:
-        Variables:
-          GENERATED_MESSAGE_TABLE: !Ref GeneratedMessageTable
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref GeneratedMessageTable
+  # # ------------------------
+  # # Put Generated Message Lambda
+  # # ------------------------
+  # PutDataToGenerated:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     CodeUri: functions/put-generate-function
+  #     Handler: app.lambdaHandler
+  #     Runtime: nodejs20.x
+  #     Environment:
+  #       Variables:
+  #         GENERATED_MESSAGE_TABLE: !Ref GeneratedMessageTable
+  #     Policies:
+  #       - DynamoDBCrudPolicy:
+  #           TableName: !Ref GeneratedMessageTable
 
-  PutDataToGeneratedLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/lambda/${PutDataToGenerated}"
-      RetentionInDays: 3
+  # PutDataToGeneratedLogGroup:
+  #   Type: AWS::Logs::LogGroup
+  #   Properties:
+  #     LogGroupName: !Sub "/aws/lambda/${PutDataToGenerated}"
+  #     RetentionInDays: 3
 
-  # ------------------------
-  # Hourly StateMachine
-  # ------------------------
-  GenerateHourMessage:
-    Type: AWS::Serverless::StateMachine
-    Properties:
-      Events:
-        HourlyTradingSchedule:
-          Type: ScheduleV2
-          Properties:
-            ScheduleExpression: rate(6 hour)
-            FlexibleTimeWindow:
-              Mode: FLEXIBLE
-              MaximumWindowInMinutes: 5
-            ScheduleExpressionTimezone: Asia/Tokyo
-      DefinitionSubstitutions:
-        GenerateFunctionArn: !GetAtt GenerateFunction.Arn
-        PutDataToGeneratedArn: !GetAtt PutDataToGenerated.Arn
-      Policies:
-        - LambdaInvokePolicy:
-            FunctionName: !Ref GenerateFunction
-        - LambdaInvokePolicy:
-            FunctionName: !Ref PutDataToGenerated
-      DefinitionUri: statemachine/generate.asl.json
+  # # ------------------------
+  # # Hourly StateMachine
+  # # ------------------------
+  # GenerateHourMessage:
+  #   Type: AWS::Serverless::StateMachine
+  #   Properties:
+  #     Events:
+  #       HourlyTradingSchedule:
+  #         Type: ScheduleV2
+  #         Properties:
+  #           ScheduleExpression: rate(6 hours)
+  #           FlexibleTimeWindow:
+  #             Mode: FLEXIBLE
+  #             MaximumWindowInMinutes: 5
+  #           ScheduleExpressionTimezone: Asia/Tokyo
+  #     DefinitionSubstitutions:
+  #       GenerateFunctionArn: !GetAtt GenerateFunction.Arn
+  #       PutDataToGeneratedArn: !GetAtt PutDataToGenerated.Arn
+  #     Policies:
+  #       - LambdaInvokePolicy:
+  #           FunctionName: !Ref GenerateFunction
+  #       - LambdaInvokePolicy:
+  #           FunctionName: !Ref PutDataToGenerated
+  #     DefinitionUri: statemachine/generate.asl.json
 
 Outputs:
   ChatApiMessagesGet:
@@ -223,5 +241,5 @@ Outputs:
     Value: !Ref MessageTable
   GeneratedMessageTableName:
     Value: !Ref GeneratedMessageTable
-  StateMachineArn:
-    Value: !Ref GenerateHourMessage
+  # StateMachineArn:
+  #   Value: !Ref GenerateHourMessage

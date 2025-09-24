@@ -32,7 +32,7 @@ export class SessionRepository {
     });
 
     try {
-      return await this.docClient.send(command);
+      await this.docClient.send(command);
     } catch (error) {
       console.error("Error upserting session:", error);
       throw error;

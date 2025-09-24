@@ -1,10 +1,17 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-
-const THREE_DAY_SECONDS = 259200;
+import { defaultExpirationSeconds } from "../config";
 
 export function getSession(event: APIGatewayProxyEvent): string | undefined {
   const header = event.headers;
-  const cookieHeader = header["Cookie"] || header["cookie"];
+  let cookieHeader: string | undefined;
+  if (!header) return undefined;
+  if ("Cookie" in header === false && "cookie" in header === false) {
+    return undefined;
+  } else if ("Cookie" in header) {
+    cookieHeader = header["Cookie"];
+  } else if ("cookie" in header) {
+    cookieHeader = header["cookie"];
+  }
 
   if (!cookieHeader) return undefined;
 
@@ -23,7 +30,7 @@ export function setSessionId(
 ): APIGatewayProxyResult {
   const cookieParts = [`sessionId=${sessionId}`];
 
-  const maxAgeSeconds = options?.maxAgeSeconds || THREE_DAY_SECONDS;
+  const maxAgeSeconds = options?.maxAgeSeconds || defaultExpirationSeconds;
 
   cookieParts.push(`Max-Age=${maxAgeSeconds}`);
   cookieParts.push("HttpOnly", "Secure", "SameSite=Strict", "Path=/");

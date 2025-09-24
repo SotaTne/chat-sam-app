@@ -1,4 +1,4 @@
-import { APIGatewayProxyEventPathParameters } from "aws-lambda";
+import { APIGatewayProxyEventQueryStringParameters } from "aws-lambda";
 
 export const RANDOM_KEY = "abcdefghijklnm";
 export const defaultExpirationSeconds = 259200;
@@ -11,7 +11,7 @@ type PathConfig = {
 };
 
 export type handlerArgs = {
-  params: APIGatewayProxyEventPathParameters | null;
+  params: APIGatewayProxyEventQueryStringParameters | null;
   sessionId: string;
   body: any | null;
 };
@@ -29,12 +29,17 @@ export const MESSAGES_POST: PathConfig = {
   method: "POST",
   path: /^\/messages\/?$/,
 };
+export const GENERATED_MESSAGE_GET: PathConfig = {
+  method: "GET",
+  path: /^\/generated-message\/?$/,
+};
 
 export const PATHS: PathConfig[] = [
   INDEX_GET,
   MESSAGES_GET,
   MESSAGES_LATEST_GET,
   MESSAGES_POST,
+  GENERATED_MESSAGE_GET,
 ];
 
 export function isPathMatch(method: string, path: string) {
@@ -48,7 +53,8 @@ export function handlePath<TArgs = any, TResult = any>(
     path: RegExp;
     method: METHODS;
     fn: (args: TArgs) => TResult;
-  }[]
+  }[],
+  args: Omit<TArgs, "method" | "path"> = {} as Omit<TArgs, "method" | "path">
 ): TResult | undefined {
   const matched = handlers.find(
     (h) => h.method === method && h.path.test(path)
@@ -58,5 +64,9 @@ export function handlePath<TArgs = any, TResult = any>(
     return undefined; // マッチしない場合は undefined を返す
   }
 
-  return matched.fn({ method, path } as TArgs);
+  return matched.fn({
+    method,
+    path,
+    ...args,
+  } as TArgs);
 }

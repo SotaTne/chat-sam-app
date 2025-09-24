@@ -1,24 +1,22 @@
 import { MessageRepository } from "../repository/message";
 import { MessageCounterRepository } from "../repository/message-counter";
 
-export async function PutMessage({
-  UserId,
-  Content,
-}: {
-  UserId: string;
-  Content: string;
-}) {
+export async function GetMessageLast({ lastNumber }: { lastNumber: number }) {
   const messageRepository = new MessageRepository();
   const messageCounterRepository = new MessageCounterRepository();
-  let count: number;
+  let maxCount: number;
   try {
-    count = await messageCounterRepository.nextMessageNo();
+    maxCount = await messageCounterRepository.getCurrent();
   } catch (e) {
     console.error("Failed to get current message count", e);
     throw e;
   }
   try {
-    await messageRepository.putMessage({ UserId, Content }, count);
+    const result = await messageRepository.getMessagesFromLast(
+      lastNumber,
+      maxCount
+    );
+    return result;
   } catch (e) {
     console.error("Failed to put message", e);
     throw e;
