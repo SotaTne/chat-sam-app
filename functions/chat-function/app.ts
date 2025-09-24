@@ -12,7 +12,8 @@ import {
   MESSAGES_LATEST_GET,
   MESSAGES_POST,
   INDEX_GET,
-  GENERATED_MESSAGE_GET,
+  //GENERATED_MESSAGE_GET,
+  COUNTER_GET,
 } from "./config";
 import { getMessagesLastHandler } from "./router/get-messages-last";
 import { postMessageHandler } from "./router/post-messages";
@@ -21,7 +22,7 @@ import { getIndexHandler } from "./router";
 import { GetSessionByRepository } from "./usecase/get-session";
 import { UpdateSession } from "./usecase/update-session";
 import { CreateSession } from "./usecase/create-session";
-import { getGeneratedMessageHandler } from "./router/get-generated-messages";
+//import { getGeneratedMessageHandler } from "./router/get-generated-messages";
 
 export async function lambdaHandler(
   event: APIGatewayProxyEvent,
@@ -95,7 +96,8 @@ export async function lambdaHandler(
         { fn: getMessagesHandler, ...MESSAGES_GET },
         { fn: getMessagesLastHandler, ...MESSAGES_LATEST_GET },
         { fn: postMessageHandler, ...MESSAGES_POST },
-        { fn: getGeneratedMessageHandler, ...GENERATED_MESSAGE_GET },
+        { fn: getMessagesHandler, ...COUNTER_GET },
+        //{ fn: getGeneratedMessageHandler, ...GENERATED_MESSAGE_GET },
       ],
       { params, sessionId: userSessionId, body }
     );

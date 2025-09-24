@@ -14,7 +14,7 @@ Globals:
         MESSAGE_TABLE: !Ref MessageTable
         MESSAGE_COUNTER_TABLE: !Ref MessageCounterTable
         SESSION_TABLE: !Ref SessionTable
-        GENERATED_MESSAGE_TABLE: !Ref GeneratedMessageTable
+        COUNTER_RANGE_TABLE: !Ref CounterRangeTable
         DUMMY_VALUE: "ALL"
         CREATED_AT_GSI: CreatedAtIndex
 
@@ -34,7 +34,7 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: !Ref SessionTable
         - DynamoDBReadPolicy:
-            TableName: !Ref GeneratedMessageTable
+            TableName: !Ref CounterRangeTable
         - DynamoDBCrudPolicy:
             TableName: !Ref MessageCounterTable
       Events:
@@ -136,110 +136,73 @@ Resources:
       BillingMode: PAY_PER_REQUEST
 
   # ------------------------
-  # Generated Message Table
+  # CounterRangeTable
   # ------------------------
-  GeneratedMessageTable:
+  CounterRangeTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: GeneratedMessageTable
+      TableName: CounterRangeTable
       AttributeDefinitions:
-        - AttributeName: GeneratedMessageId
-          AttributeType: S
-        - AttributeName: CreatedAt
-          AttributeType: N
-        - AttributeName: Dummy
+        - AttributeName: RecordId
           AttributeType: S
       KeySchema:
-        - AttributeName: GeneratedMessageId
+        - AttributeName: RecordId
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
-      GlobalSecondaryIndexes:
-        - IndexName: CreatedAtIndex
-          KeySchema:
-            - AttributeName: Dummy # 固定値 ("ALL") を入れる
-              KeyType: HASH
-            - AttributeName: CreatedAt
-              KeyType: RANGE
-          Projection:
-            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: CreatedAt
+        Enabled: true
 
-  # # ------------------------
-  # # Generate Lambda
-  # # ------------------------
-  # GenerateFunction:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     CodeUri: functions/generate-function
-  #     Handler: app.lambdaHandler
-  #     Runtime: nodejs20.x
-  #     Environment:
-  #       Variables:
-  #         MESSAGE_TABLE: !Ref MessageTable
-  #         CREATED_AT_GSI: CreatedAtIndex
-  #         DUMMY_VALUE: "ALL"
-  #     Policies:
-  #       - DynamoDBReadPolicy:
-  #           TableName: !Ref MessageTable
+  CollectFunc:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/counter-function
+      Handler: app.lambdaHandler
+      Runtime: nodejs20.x
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MessageTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref CounterRangeTable
 
-  # GenerateFunctionLogGroup:
-  #   Type: AWS::Logs::LogGroup
-  #   Properties:
-  #     LogGroupName: !Sub "/aws/lambda/${GenerateFunction}"
-  #     RetentionInDays: 3
-
-  # # ------------------------
-  # # Put Generated Message Lambda
-  # # ------------------------
-  # PutDataToGenerated:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     CodeUri: functions/put-generate-function
-  #     Handler: app.lambdaHandler
-  #     Runtime: nodejs20.x
-  #     Environment:
-  #       Variables:
-  #         GENERATED_MESSAGE_TABLE: !Ref GeneratedMessageTable
-  #     Policies:
-  #       - DynamoDBCrudPolicy:
-  #           TableName: !Ref GeneratedMessageTable
-
-  # PutDataToGeneratedLogGroup:
-  #   Type: AWS::Logs::LogGroup
-  #   Properties:
-  #     LogGroupName: !Sub "/aws/lambda/${PutDataToGenerated}"
-  #     RetentionInDays: 3
+    Metadata: # Manage esbuild properties
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: "es2020"
+        EntryPoints:
+          - app.ts
 
   # # ------------------------
   # # Hourly StateMachine
   # # ------------------------
-  # GenerateHourMessage:
-  #   Type: AWS::Serverless::StateMachine
-  #   Properties:
-  #     Events:
-  #       HourlyTradingSchedule:
-  #         Type: ScheduleV2
-  #         Properties:
-  #           ScheduleExpression: rate(6 hours)
-  #           FlexibleTimeWindow:
-  #             Mode: FLEXIBLE
-  #             MaximumWindowInMinutes: 5
-  #           ScheduleExpressionTimezone: Asia/Tokyo
-  #     DefinitionSubstitutions:
-  #       GenerateFunctionArn: !GetAtt GenerateFunction.Arn
-  #       PutDataToGeneratedArn: !GetAtt PutDataToGenerated.Arn
-  #     Policies:
-  #       - LambdaInvokePolicy:
-  #           FunctionName: !Ref GenerateFunction
-  #       - LambdaInvokePolicy:
-  #           FunctionName: !Ref PutDataToGenerated
-  #     DefinitionUri: statemachine/generate.asl.json
+  CountHourMessage:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/generate.asl.json
+
+      DefinitionSubstitutions:
+        CollectFuncArn: !GetAtt CollectFunc.Arn
+
+        Events:
+        HourlyTradingSchedule:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: rate(6 hour)
+            FlexibleTimeWindow:
+              Mode: FLEXIBLE
+              MaximumWindowInMinutes: 5
+            ScheduleExpressionTimezone: Asia/Tokyo
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CollectFunc
 
 Outputs:
   ChatApiMessagesGet:
     Value: !Sub "GET /messages"
   MessageTableName:
     Value: !Ref MessageTable
-  GeneratedMessageTableName:
-    Value: !Ref GeneratedMessageTable
-  # StateMachineArn:
-  #   Value: !Ref GenerateHourMessage
+  CounterRangeTableName:
+    Value: !Ref CounterRangeTable
+  StateMachineArn:
+    Value: !Ref CountHourMessage

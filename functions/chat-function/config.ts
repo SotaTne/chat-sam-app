@@ -29,9 +29,13 @@ export const MESSAGES_POST: PathConfig = {
   method: "POST",
   path: /^\/messages\/?$/,
 };
-export const GENERATED_MESSAGE_GET: PathConfig = {
+// export const GENERATED_MESSAGE_GET: PathConfig = {
+//   method: "GET",
+//   path: /^\/generated-message\/?$/,
+// };
+export const COUNTER_GET: PathConfig = {
   method: "GET",
-  path: /^\/generated-message\/?$/,
+  path: /^\/message-counter\/?$/,
 };
 
 export const PATHS: PathConfig[] = [
@@ -39,7 +43,8 @@ export const PATHS: PathConfig[] = [
   MESSAGES_GET,
   MESSAGES_LATEST_GET,
   MESSAGES_POST,
-  GENERATED_MESSAGE_GET,
+  COUNTER_GET,
+  // GENERATED_MESSAGE_GET,
 ];
 
 export function isPathMatch(method: string, path: string) {
