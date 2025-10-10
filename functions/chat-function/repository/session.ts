@@ -5,21 +5,15 @@ import {
   GetCommand,
   // DeleteCommand,
 } from "@aws-sdk/lib-dynamodb";
+import { AbstractDynamoDB } from "./dynamo_db";
 
 export interface SessionItem {
   SessionId: string;
   ExpirationDate: Date;
 }
 
-export class SessionRepository {
-  private client: DynamoDBClient;
-  private docClient: DynamoDBDocumentClient;
-  private tableName = process.env.SESSION_TABLE || "SessionTable";
-
-  constructor() {
-    this.client = new DynamoDBClient({ region: "ap-northeast-1" });
-    this.docClient = DynamoDBDocumentClient.from(this.client);
-  }
+export class SessionRepository extends AbstractDynamoDB {
+  tableName = process.env.SESSION_TABLE || "SessionTable";
 
   /** sessionId を新規作成 or 更新 */
   async upsertSession(item: SessionItem) {
@@ -34,6 +28,7 @@ export class SessionRepository {
     try {
       await this.docClient.send(command);
     } catch (error) {
+      console.error("DYNAMODB_ENDPOINT:", process.env.DYNAMODB_ENDPOINT);
       console.error("Error upserting session:", error);
       throw error;
     }

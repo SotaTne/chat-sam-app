@@ -1,1 +1,4 @@
 node_modules/
+volume/
+.venv/
+.DS_Store

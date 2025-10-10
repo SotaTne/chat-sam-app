@@ -1,0 +1,22 @@
+services:
+  localstack:
+    container_name: "${LOCALSTACK_DOCKER_NAME:-localstack_main}"
+    image: localstack/localstack:1.4.0
+    configs:
+      - source: aws_profile
+        target: /root/.aws
+    ports:
+      - "127.0.0.1:4566:4566" # LocalStack Gateway
+      - "127.0.0.1:4510-4559:4510-4559" # external services port range
+    environment:
+      - DEBUG=${DEBUG:-0}
+      - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR:-docker-reuse}
+      - PROVIDER_OVERRIDE_LAMBDA=asf # enable runtime node.js 18.x
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+configs:
+  aws_profile:
+    file: ./docker/settings/profile

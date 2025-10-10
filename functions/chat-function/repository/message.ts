@@ -5,6 +5,7 @@ import {
   PutCommandInput,
   QueryCommand,
 } from "@aws-sdk/lib-dynamodb";
+import { AbstractDynamoDB } from "./dynamo_db";
 
 export type MessageItem = {
   MessageNo: number;
@@ -14,15 +15,8 @@ export type MessageItem = {
   Dummy?: string;
 };
 
-export class MessageRepository {
-  private client: DynamoDBClient;
-  private docClient: DynamoDBDocumentClient;
-  private table_name = process.env.MESSAGE_TABLE || "MessageTable";
-
-  constructor() {
-    this.client = new DynamoDBClient({ region: "ap-northeast-1" });
-    this.docClient = DynamoDBDocumentClient.from(this.client);
-  }
+export class MessageRepository extends AbstractDynamoDB {
+  tableName = process.env.MESSAGE_TABLE || "MessageTable";
 
   /** メッセージ登録 */
   async putMessage(
@@ -30,7 +24,7 @@ export class MessageRepository {
     messageNo: number
   ) {
     const params: PutCommandInput = {
-      TableName: this.table_name,
+      TableName: this.tableName,
       Item: {
         ...item,
         MessageNo: messageNo,
@@ -59,7 +53,7 @@ export class MessageRepository {
     if (low > high) return [];
 
     const command = new QueryCommand({
-      TableName: this.table_name,
+      TableName: this.tableName,
       KeyConditionExpression:
         "Dummy = :dummy AND MessageNo BETWEEN :low AND :high",
       ExpressionAttributeValues: {
@@ -95,7 +89,7 @@ export class MessageRepository {
     const high = last + count;
 
     const command = new QueryCommand({
-      TableName: this.table_name,
+      TableName: this.tableName,
       KeyConditionExpression:
         "Dummy = :dummy AND MessageNo BETWEEN :low AND :high",
       ExpressionAttributeValues: {

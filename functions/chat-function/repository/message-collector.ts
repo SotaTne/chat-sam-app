@@ -1,5 +1,6 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { AbstractDynamoDB } from "./dynamo_db";
 
 export type CounterRangeItem = {
   RecordId: string; // HASHキー
@@ -10,15 +11,8 @@ export type CounterRangeItem = {
   CreatedAt: number; // レコード作成日時（TTL）
 };
 
-export class MessageCollectionRepository {
-  private client: DynamoDBClient;
-  private docClient: DynamoDBDocumentClient;
-  private tableName = process.env.COUNTER_RANGE_TABLE || "CounterRangeTable";
-
-  constructor() {
-    this.client = new DynamoDBClient({ region: "ap-northeast-1" });
-    this.docClient = DynamoDBDocumentClient.from(this.client);
-  }
+export class MessageCollectionRepository extends AbstractDynamoDB {
+  tableName = process.env.COUNTER_RANGE_TABLE || "CounterRangeTable";
 
   // /** 集計データを保存 */
   // async saveCounter(item: CounterRangeItem) {

@@ -20,4 +20,40 @@ EntryPoints = ["app.ts"]
 
 
 
+
+
+
+
+
+
+
+
+
+
+[function_build_definitions.d0b9ad13-2dbb-48a9-ad19-203f48da0816]
+codeuri = "/Users/sota/dev/chat-sam-app/functions/counter-function"
+runtime = "nodejs20.x"
+architecture = "x86_64"
+handler = "app.lambdaHandler"
+manifest_hash = ""
+packagetype = "Zip"
+functions = ["CollectFunc"]
+
+[function_build_definitions.d0b9ad13-2dbb-48a9-ad19-203f48da0816.metadata]
+BuildMethod = "esbuild"
+
+[function_build_definitions.d0b9ad13-2dbb-48a9-ad19-203f48da0816.metadata.BuildProperties]
+Minify = true
+Target = "es2020"
+EntryPoints = ["app.ts"]
+
+
+
+
+
+
+
+
+
+
 [layer_build_definitions]

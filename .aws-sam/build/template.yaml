@@ -15,8 +15,8 @@ Globals:
           Ref: MessageCounterTable
         SESSION_TABLE:
           Ref: SessionTable
-        GENERATED_MESSAGE_TABLE:
-          Ref: GeneratedMessageTable
+        COUNTER_RANGE_TABLE:
+          Ref: CounterRangeTable
         DUMMY_VALUE: ALL
         CREATED_AT_GSI: CreatedAtIndex
 Resources:
@@ -35,7 +35,7 @@ Resources:
             Ref: SessionTable
       - DynamoDBReadPolicy:
           TableName:
-            Ref: GeneratedMessageTable
+            Ref: CounterRangeTable
       - DynamoDBCrudPolicy:
           TableName:
             Ref: MessageCounterTable
@@ -125,30 +125,41 @@ Resources:
       - AttributeName: CounterId
         KeyType: HASH
       BillingMode: PAY_PER_REQUEST
-  GeneratedMessageTable:
+  CounterRangeTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: GeneratedMessageTable
+      TableName: CounterRangeTable
       AttributeDefinitions:
-      - AttributeName: GeneratedMessageId
-        AttributeType: S
-      - AttributeName: CreatedAt
-        AttributeType: N
-      - AttributeName: Dummy
+      - AttributeName: RecordId
         AttributeType: S
       KeySchema:
-      - AttributeName: GeneratedMessageId
+      - AttributeName: RecordId
         KeyType: HASH
       BillingMode: PAY_PER_REQUEST
-      GlobalSecondaryIndexes:
-      - IndexName: CreatedAtIndex
-        KeySchema:
-        - AttributeName: Dummy
-          KeyType: HASH
-        - AttributeName: CreatedAt
-          KeyType: RANGE
-        Projection:
-          ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: CreatedAt
+        Enabled: true
+  CollectFunc:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: CollectFunc
+      Handler: app.lambdaHandler
+      Runtime: nodejs20.x
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: MessageTable
+      - DynamoDBReadPolicy:
+          TableName:
+            Ref: CounterRangeTable
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+        - app.ts
+        Minify: true
+        Target: es2020
+      SamResourceId: CollectFunc
 Outputs:
   ChatApiMessagesGet:
     Value:
@@ -156,6 +167,6 @@ Outputs:
   MessageTableName:
     Value:
       Ref: MessageTable
-  GeneratedMessageTableName:
+  CounterRangeTableName:
     Value:
-      Ref: GeneratedMessageTable
+      Ref: CounterRangeTable
