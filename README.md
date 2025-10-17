@@ -1,33 +1,31 @@
-### 1. AWS 認証情報（ダミー）の作成
+## ブラウザで動かしたい時
 
-ホームディレクトリに `~/.aws/credentials` を作り、LocalStack 用にダミー情報を追加：
+### profile の設定
 
-```ini
-[localstack]
-aws_access_key_id = dummy
-aws_secret_access_key = dummy
-```
+sandbox という profile を作成して、名前を sandbox-dev として作成する
 
----
-
-### 2. SAM Local（samlocal）インストール
-
-Python の `pip` でインストール：
+### build
 
 ```bash
-uv pip install -r requirements.txt
+sam build
 ```
 
-これで `samlocal` コマンドが使えるようになります。
-
-### 3. samlocal へのデプロイ
-
-docker を起動してから samlocal にデプロイできます
+### deploy
 
 ```bash
-docker compose up -d
+sam deploy --profile sandbox-dev
 ```
 
+## ローカルで動かしたい時
+
+### docker の起動
+
 ```bash
-samlocal deploy --config-file samconfig.localstack.toml
+docker compose up
+```
+
+### local での api の起動
+
+```bash
+sam local start-api
 ```

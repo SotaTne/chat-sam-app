@@ -1,22 +1,33 @@
-services:
-  localstack:
-    container_name: "${LOCALSTACK_DOCKER_NAME:-localstack_main}"
-    image: localstack/localstack:1.4.0
-    configs:
-      - source: aws_profile
-        target: /root/.aws
-    ports:
-      - "127.0.0.1:4566:4566" # LocalStack Gateway
-      - "127.0.0.1:4510-4559:4510-4559" # external services port range
-    environment:
-      - DEBUG=${DEBUG:-0}
-      - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR:-docker-reuse}
-      - PROVIDER_OVERRIDE_LAMBDA=asf # enable runtime node.js 18.x
-      - DOCKER_HOST=unix:///var/run/docker.sock
-    volumes:
-      - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
-      - "/var/run/docker.sock:/var/run/docker.sock"
+networks:
+  chat-sam-app-net:
+    driver: bridge
 
-configs:
-  aws_profile:
-    file: ./docker/settings/profile
+services:
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    container_name: dynamodb-local
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
+    ports:
+      - "8000:8000"
+    volumes:
+      - "./docker/dynamodb:/home/dynamodblocal/data"
+    working_dir: /home/dynamodblocal
+    networks:
+      - chat-sam-app-net
+
+  add-table:
+    image: amazon/aws-cli
+    depends_on:
+      - dynamodb-local
+    entrypoint: ["/bin/sh", "/tmp/init-tables.sh"]
+    environment:
+      - AWS_ACCESS_KEY_ID=dummy
+      - AWS_SECRET_ACCESS_KEY=dummy
+    volumes:
+      - "./docker/MessageTable.json:/tmp/MessageTable.json"
+      - "./docker/SessionTable.json:/tmp/SessionTable.json"
+      - "./docker/MessageCounterTable.json:/tmp/MessageCounterTable.json"
+      - "./docker/CounterRangeTable.json:/tmp/CounterRangeTable.json"
+      - "./docker/init-tables.sh:/tmp/init-tables.sh"
+    networks:
+      - chat-sam-app-net

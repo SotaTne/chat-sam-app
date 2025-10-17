@@ -7,7 +7,17 @@ export abstract class AbstractDynamoDB {
   docClient: DynamoDBDocumentClient;
   abstract tableName: string;
   constructor() {
-    this.client = new DynamoDBClient({ region: "ap-northeast-1" });
+    const config = process.env.AWS_SAM_LOCAL
+      ? {
+          endpoint: "http://host.docker.internal:8000", // DynamoDB Local
+          region: "ap-northeast-1",
+          credentials: {
+            accessKeyId: "dummy",
+            secretAccessKey: "dummy",
+          },
+        }
+      : { region: "ap-northeast-1" };
+    this.client = new DynamoDBClient(config);
     this.docClient = DynamoDBDocumentClient.from(this.client);
   }
 }

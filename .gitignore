@@ -2,3 +2,5 @@ node_modules/
 volume/
 .venv/
 .DS_Store
+*.db
+.aws-sam/

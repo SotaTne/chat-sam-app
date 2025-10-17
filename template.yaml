@@ -173,30 +173,29 @@ Resources:
         EntryPoints:
           - app.ts
 
-  # # ------------------------
-  # # Hourly StateMachine
-  # # ------------------------
-  # CountHourMessage:
-  #   Type: AWS::Serverless::StateMachine
-  #   Properties:
-  #     DefinitionUri: statemachine/generate.asl.json
+  # ------------------------
+  # Hourly StateMachine
+  # ------------------------
+  CountHourMessage:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/generate.asl.json
+      DefinitionSubstitutions:
+        CollectFuncArn: !GetAtt CollectFunc.Arn
 
-  #     DefinitionSubstitutions:
-  #       CollectFuncArn: !GetAtt CollectFunc.Arn
+      Events:
+        HourlyTradingSchedule:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: rate(6 hour)
+            FlexibleTimeWindow:
+              Mode: FLEXIBLE
+              MaximumWindowInMinutes: 5
+            ScheduleExpressionTimezone: Asia/Tokyo
 
-  #       Events:
-  #       HourlyTradingSchedule:
-  #         Type: ScheduleV2
-  #         Properties:
-  #           ScheduleExpression: rate(6 hour)
-  #           FlexibleTimeWindow:
-  #             Mode: FLEXIBLE
-  #             MaximumWindowInMinutes: 5
-  #           ScheduleExpressionTimezone: Asia/Tokyo
-  #     Policies:
-  #       - LambdaInvokePolicy:
-  #           FunctionName: !Ref CollectFunc
-
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CollectFunc
 Outputs:
   ChatApiMessagesGet:
     Value: !Sub "GET /messages"

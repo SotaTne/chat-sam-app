@@ -28,7 +28,6 @@ export class SessionRepository extends AbstractDynamoDB {
     try {
       await this.docClient.send(command);
     } catch (error) {
-      console.error("DYNAMODB_ENDPOINT:", process.env.DYNAMODB_ENDPOINT);
       console.error("Error upserting session:", error);
       throw error;
     }

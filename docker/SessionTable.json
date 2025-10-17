@@ -1,0 +1,8 @@
+{
+  "TableName": "CounterRangeTable",
+  "AttributeDefinitions": [
+    { "AttributeName": "RecordId", "AttributeType": "S" }
+  ],
+  "KeySchema": [{ "AttributeName": "RecordId", "KeyType": "HASH" }],
+  "BillingMode": "PAY_PER_REQUEST"
+}
