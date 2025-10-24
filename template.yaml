@@ -20,6 +20,66 @@ Globals:
 
 Resources:
   # ------------------------
+  # Cognito User Pool & Client
+  # ------------------------
+  ChatUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: ChatUserPool
+      AutoVerifiedAttributes:
+        - email
+      UsernameAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+
+  ChatUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: ChatUserPoolClient
+      UserPoolId: !Ref ChatUserPool
+      GenerateSecret: false
+      # ExplicitAuthFlows:
+      #   - ADMIN_NO_SRP_AUTH
+      #   - USER_PASSWORD_AUTH
+      PreventUserExistenceErrors: ENABLED
+      AllowedOAuthFlowsUserPoolClient: true
+      CallbackURLs:
+        - "https://oauth.pstmn.io/v1/callback" # 処理が終わったあとに情報を持ってPostmanに戻るためのURL
+      SupportedIdentityProviders:
+        - "COGNITO" # IDプロバイダを指定
+      AllowedOAuthFlows:
+        - "code" # どのOAuthFlowを指定
+      AllowedOAuthScopes:
+        - "openid"
+
+  ChatUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Sub "${AWS::StackName}-chat-domain"
+      UserPoolId: !Ref ChatUserPool
+
+  # ------------------------
+  # API
+  # ------------------------
+  ChatApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Auth:
+        DefaultAuthorizer: ChatAuthorizer
+        Authorizers:
+          ChatAuthorizer:
+            UserPoolArn: !GetAtt ChatUserPool.Arn
+            Identity:
+              Header: Authorization
+
+  # ------------------------
   # Chat Lambda
   # ------------------------
   ChatFunction:
@@ -43,22 +103,33 @@ Resources:
           Properties:
             Path: /messages
             Method: GET
+            RestApiId: !Ref ChatApi
         PostMessage:
           Type: Api
           Properties:
             Path: /messages
             Method: POST
+            RestApiId: !Ref ChatApi
         GetLatestMessages:
           Type: Api
           Properties:
             Path: /messages/latest
             Method: GET
+            RestApiId: !Ref ChatApi
         StaticIndex:
           Type: Api
           Properties:
             Path: /
             Method: GET
-    Metadata: # Manage esbuild properties
+            RestApiId: !Ref ChatApi
+        GetAdminInfo:
+          Type: Api
+          Properties:
+            Path: /admin-info
+            Method: GET
+            RestApiId: !Ref ChatApi
+
+    Metadata:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
@@ -153,6 +224,9 @@ Resources:
         AttributeName: CreatedAt
         Enabled: true
 
+  # ------------------------
+  # Counter Lambda
+  # ------------------------
   CollectFunc:
     Type: AWS::Serverless::Function
     Properties:
@@ -164,8 +238,7 @@ Resources:
             TableName: !Ref MessageTable
         - DynamoDBReadPolicy:
             TableName: !Ref CounterRangeTable
-
-    Metadata: # Manage esbuild properties
+    Metadata:
       BuildMethod: esbuild
       BuildProperties:
         Minify: true
@@ -182,7 +255,6 @@ Resources:
       DefinitionUri: statemachine/generate.asl.json
       DefinitionSubstitutions:
         CollectFuncArn: !GetAtt CollectFunc.Arn
-
       Events:
         HourlyTradingSchedule:
           Type: ScheduleV2
@@ -192,16 +264,17 @@ Resources:
               Mode: FLEXIBLE
               MaximumWindowInMinutes: 5
             ScheduleExpressionTimezone: Asia/Tokyo
-
       Policies:
         - LambdaInvokePolicy:
             FunctionName: !Ref CollectFunc
+
 Outputs:
-  ChatApiMessagesGet:
-    Value: !Sub "GET /messages"
   MessageTableName:
     Value: !Ref MessageTable
   CounterRangeTableName:
     Value: !Ref CounterRangeTable
-  # StateMachineArn:
-  #   Value: !Ref CountHourMessage
+  StateMachineArn:
+    Value: !Ref CountHourMessage
+  ChatApiUrl:
+    Description: "Base URL for the Chat API"
+    Value: !Sub "https://${ChatApi}.execute-api.${AWS::Region}.amazonaws.com/${ChatApi.Stage}"

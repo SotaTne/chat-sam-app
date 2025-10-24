@@ -1,0 +1,254 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  CRUD-API-practice-v6
+
+  Lin
+
+Parameters: # 変数定義
+  StackName:
+    Type: String
+    Default: lin-crud-api-v6
+  TableName:
+    Type: String
+    Default: book-list-test-2
+  BucketName:
+    Type: String
+    Default: bookstorage-lin-2
+
+Globals:
+  Function:
+    # Timeout: 3
+    # MemorySize: 128
+    Tracing: Active
+  Api:
+    TracingEnabled: true
+    OpenApiVersion: 3.0.1
+
+Resources:
+  BookListApi: # API Gatewayの設定
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: v1
+      Cors: "'*'"
+      Auth:
+        Authorizers: # API Gatewayのオーソライザーを設定
+          CognitoAuthorizer:
+            UserPoolArn: !GetAtt BookListCognitoUserPool.Arn
+            Identity:
+              Header: Authorization
+        DefaultAuthorizer: CognitoAuthorizer # デフォルトのオーソライザーを設定
+
+  BookListFunction: # Lambda Functionの設定
+    Type: AWS::Serverless::Function
+    Properties:
+      Policies: # Lambdaの他のリソースへのアクセス権限を設定
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TableOfBooks
+        - S3CrudPolicy:
+            BucketName: !Ref BookListStorage
+      CodeUri: ./src/
+      Description: ""
+      MemorySize: 128
+      Timeout: 3
+      Handler: index.handler
+      Runtime: nodejs20.x
+      Architectures:
+        - x86_64
+      Events: # 各種イベントを定義
+        GetBook:
+          Type: Api
+          Properties:
+            Path: /book-list
+            Method: GET
+            RestApiId:
+              Ref: BookListApi
+            Auth:
+              Authorizer: NONE # オーソライザーを指定、NONEならアクセス制限なし、何も書かなければAPI　Gatewayでの設定が使用される
+        PutBook:
+          Type: Api
+          Properties:
+            Path: /book-list
+            Method: PUT
+            RestApiId:
+              Ref: BookListApi
+        DeleteBook:
+          Type: Api
+          Properties:
+            Path: /book-list/delete
+            Method: DELETE
+            RestApiId:
+              Ref: BookListApi
+            Auth:
+              Authorizer: CognitoAuthorizer
+        SearchBook:
+          Type: Api
+          Properties:
+            Path: /book-list/search
+            Method: GET
+            RestApiId:
+              Ref: BookListApi
+        UpdateBook:
+          Type: Api
+          Properties:
+            Path: /book-list/update
+            Method: POST
+            RestApiId:
+              Ref: BookListApi
+        InputBook:
+          Type: Api
+          Properties:
+            Path: /book-list/input
+            Method: POST
+            RestApiId:
+              Ref: BookListApi
+        AnyBookAuthor:
+          Type: Api
+          Properties:
+            Path: /book-list/search/{AuthorName}
+            Method: GET
+            RestApiId:
+              Ref: BookListApi
+        AnyBookAuthorIsbn:
+          Type: Api
+          Properties:
+            Path: /book-list/search/{AuthorName}/{isbn}
+            Method: GET
+            RestApiId:
+              Ref: BookListApi
+        PostBookFig:
+          Type: Api
+          Properties:
+            Path: /book-list/fig
+            Method: POST
+            RestApiId:
+              Ref: BookListApi
+      RuntimeManagementConfig:
+        UpdateRuntimeOn: Auto
+      SnapStart:
+        ApplyOn: None
+      PackageType: Zip
+      Layers:
+        - !Ref BookListFunctionLayer # 利用するモジュールを含んだレイヤーを指定
+
+  BookListFunctionLayer: # Lambda Layerの設定
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: "nodejs/" # ローカルのモジュールをおいたパスを指定
+      CompatibleRuntimes:
+        - nodejs20.x
+    Metadata:
+      BuildMethod: nodejs20.x # "sam build"を実行する際に必要
+      BuildArchitecture: x86_64
+
+  TableOfBooks: # DynamoDBの設定
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref TableName
+      BillingMode: PAY_PER_REQUEST # リクエストごとの課金にする
+      AttributeDefinitions: # キーとして利用する予定の変数を定義
+        - AttributeName: author
+          AttributeType: S
+        - AttributeName: isbn
+          AttributeType: N
+        - AttributeName: price
+          AttributeType: N
+        - AttributeName: date
+          AttributeType: N
+      KeySchema: # メインのプライマリーキー
+        - AttributeName: author
+          KeyType: HASH
+        - AttributeName: isbn
+          KeyType: RANGE
+      LocalSecondaryIndexes: # LSIの設定
+        - IndexName: author-price-index # インデックス名
+          KeySchema:
+            - AttributeName: author
+              KeyType: HASH # パーティションキー
+            - AttributeName: price
+              KeyType: RANGE # ソートキー
+          Projection:
+            ProjectionType: ALL
+        - IndexName: author-date-index
+          KeySchema:
+            - AttributeName: author
+              KeyType: HASH
+            - AttributeName: date
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      GlobalSecondaryIndexes: # GSIの設定
+        - IndexName: isbn-price-index
+          KeySchema:
+            - AttributeName: isbn
+              KeyType: HASH
+            - AttributeName: price
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: date-isbn-index
+          KeySchema:
+            - AttributeName: date
+              KeyType: HASH
+            - AttributeName: isbn
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  BookListStorage: # S3の設定
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName #　S3のバケット名
+      PublicAccessBlockConfiguration: # パブリックアクセス許可設定
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  BookListCognitoUserPool: # Cognito UserPoolの設定
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub "${StackName}-UserPool"
+
+  BookListCognitoUserPoolClient: # Cognito UserPool Clientの設定
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref BookListCognitoUserPool
+      ClientName: !Sub "${StackName}-ClientApp"
+      GenerateSecret: false
+      PreventUserExistenceErrors: ENABLED
+      AllowedOAuthFlowsUserPoolClient: true
+      CallbackURLs:
+        - "https://oauth.pstmn.io/v1/callback" # 処理が終わったあとに情報を持ってPostmanに戻るためのURL
+      SupportedIdentityProviders:
+        - "COGNITO" # IDプロバイダを指定
+      AllowedOAuthFlows:
+        - "implicit" # どのOAuthFlowを指定
+      AllowedOAuthScopes:
+        - "openid"
+
+  BookListUserPoolDomain: # Cognito UserPool認証エンドポイントのドメインを設定
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Sub ${StackName}
+      UserPoolId: !Ref BookListCognitoUserPool
+
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  BookListApi:
+    Description: API Gateway endpoint URL for Prod stage for ToDo function
+    Value: !Sub "https://${BookListApi}.execute-api.${AWS::Region}.amazonaws.com/v1/book-list/"
+  AuthorizeURL:
+    Description: URL to get Authorize token by using Postman
+    Value: !Sub "https://${StackName}.auth.ap-northeast-1.amazoncognito.com/oauth2/authorize"
+  BookListFunction:
+    Description: ToDo Lambda Function ARN
+    Value: !GetAtt BookListFunction.Arn
+  # ToDoIamRole:
+  #   Description: Implicit IAM Role created for ToDo function
+  #   Value: !GetAtt BookListFunctionRole.Arn
+  BookListCognitoUserPoolClient:
+    Description: ClientID
+    Value: !GetAtt BookListCognitoUserPoolClient.ClientId

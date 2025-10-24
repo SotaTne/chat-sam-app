@@ -38,6 +38,11 @@ export const COUNTER_GET: PathConfig = {
   path: /^\/message-counter\/?$/,
 };
 
+export const LOGIN_GET: PathConfig = {
+  method: "GET",
+  path: /^\/login\/?$/,
+};
+
 export const PATHS: PathConfig[] = [
   INDEX_GET,
   MESSAGES_GET,
