@@ -267,7 +267,26 @@ Resources:
       Policies:
         - LambdaInvokePolicy:
             FunctionName: !Ref CollectFunc
-
+  LogoBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${AWS::StackName}-logo-bucket"
+      AccessControl: Private
+      VersioningConfiguration:
+        Status: Enabled
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins:
+              - "*"
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+              - DELETE
+              - HEAD
+            AllowedHeaders:
+              - "*"
+            MaxAge: 3000
 Outputs:
   MessageTableName:
     Value: !Ref MessageTable
@@ -278,3 +297,5 @@ Outputs:
   ChatApiUrl:
     Description: "Base URL for the Chat API"
     Value: !Sub "https://${ChatApi}.execute-api.${AWS::Region}.amazonaws.com/${ChatApi.Stage}"
+  LogoBucketName:
+    Value: !Ref LogoBucket
