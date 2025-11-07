@@ -14,6 +14,7 @@ export type handlerArgs = {
   params: APIGatewayProxyEventQueryStringParameters | null;
   sessionId: string;
   body: any | null;
+  header: { [name: string]: string | undefined };
 };
 
 export const INDEX_GET: PathConfig = { method: "GET", path: /^\/$/ };

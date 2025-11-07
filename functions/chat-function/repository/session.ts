@@ -1,6 +1,4 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
-  DynamoDBDocumentClient,
   PutCommand,
   GetCommand,
   // DeleteCommand,
@@ -21,7 +19,7 @@ export class SessionRepository extends AbstractDynamoDB {
       TableName: this.tableName,
       Item: {
         ...item,
-        ExpirationDate: item.ExpirationDate.toISOString(),
+        ExpirationDate: Math.floor(item.ExpirationDate.getTime() / 1000), // Unix timestamp (秒)
       },
     });
 
@@ -46,7 +44,7 @@ export class SessionRepository extends AbstractDynamoDB {
 
       return {
         ...data.Item,
-        ExpirationDate: new Date(data.Item.ExpirationDate),
+        ExpirationDate: new Date(data.Item.ExpirationDate * 1000), // 秒→ミリ秒変換を追加
       } as SessionItem;
     } catch (error) {
       console.error("Error getting session:", error);

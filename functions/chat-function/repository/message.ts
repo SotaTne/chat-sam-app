@@ -107,18 +107,29 @@ export class MessageRepository extends AbstractDynamoDB {
     };
   }
 
-  // /** 単一メッセージ取得 */
-  // async getMessageById(messageNo: number) {
-  //   const command = new QueryCommand({
-  //     TableName: "MessageTable",
-  //     KeyConditionExpression: "Dummy = :dummy AND MessageNo = :no",
-  //     ExpressionAttributeValues: {
-  //       ":dummy": "ALL",
-  //       ":no": messageNo,
-  //     },
-  //   });
+  /** 指定期間のメッセージを取得 */
+  async getMessagesFromTimeStampRange(
+    startTimestamp: number,
+    endTimestamp: number
+  ): Promise<MessageItem[]> {
+    if (startTimestamp > endTimestamp) {
+      throw new Error("startTimestamp must be <= endTimestamp");
+    }
 
-  //   const result = await this.docClient.send(command);
-  //   return result.Items?.[0] as MessageItem | undefined;
-  // }
+    const command = new QueryCommand({
+      TableName: this.tableName,
+      IndexName: "CreatedAtIndex", // GSI を明示的に指定
+      KeyConditionExpression:
+        "Dummy = :dummy AND CreatedAt BETWEEN :low AND :high",
+      ExpressionAttributeValues: {
+        ":dummy": "ALL",
+        ":low": startTimestamp,
+        ":high": endTimestamp,
+      },
+      ScanIndexForward: true, // 昇順（古い→新しい）
+    });
+
+    const result = await this.docClient.send(command);
+    return (result.Items ?? []) as MessageItem[];
+  }
 }

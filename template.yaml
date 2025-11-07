@@ -125,7 +125,7 @@ Resources:
         GetAdminInfo:
           Type: Api
           Properties:
-            Path: /admin-info
+            Path: /message-counter
             Method: GET
             RestApiId: !Ref ChatApi
 
@@ -221,7 +221,7 @@ Resources:
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
       TimeToLiveSpecification:
-        AttributeName: CreatedAt
+        AttributeName: ExpirationDate
         Enabled: true
 
   # ------------------------
@@ -236,7 +236,7 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref MessageTable
-        - DynamoDBReadPolicy:
+        - DynamoDBCrudPolicy:
             TableName: !Ref CounterRangeTable
     Metadata:
       BuildMethod: esbuild

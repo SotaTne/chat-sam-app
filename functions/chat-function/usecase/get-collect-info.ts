@@ -1,9 +1,9 @@
-import { MessageCollectionRepository } from "../repository/message-collector";
+import { MessageRangeRepository } from "../repository/message-range";
 
 export async function GetCollectInfo() {
-  const messageCollectionRepository = new MessageCollectionRepository();
+  const messageRangeRepository = new MessageRangeRepository();
   try {
-    const info = await messageCollectionRepository.getAllCounters();
+    const info = await messageRangeRepository.getAllCounters();
     return info;
   } catch (e) {
     console.error("Failed to get collect info", e);

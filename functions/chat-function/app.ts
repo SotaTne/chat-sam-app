@@ -22,6 +22,7 @@ import { getIndexHandler } from "./router";
 import { GetSessionByRepository } from "./usecase/get-session";
 import { UpdateSession } from "./usecase/update-session";
 import { CreateSession } from "./usecase/create-session";
+import { getCounterHandler } from "./router/get-counter";
 //import { getGeneratedMessageHandler } from "./router/get-generated-messages";
 
 export async function lambdaHandler(
@@ -30,7 +31,7 @@ export async function lambdaHandler(
 ): Promise<APIGatewayProxyResult> {
   const path = event.path;
   const params = event.queryStringParameters;
-  // const header = event.headers;
+  const header = event.headers;
   const body: Response = JSON.parse(event.body || "null") || null;
 
   const method = event.httpMethod;
@@ -96,10 +97,9 @@ export async function lambdaHandler(
         { fn: getMessagesHandler, ...MESSAGES_GET },
         { fn: getMessagesLastHandler, ...MESSAGES_LATEST_GET },
         { fn: postMessageHandler, ...MESSAGES_POST },
-        { fn: getMessagesHandler, ...COUNTER_GET },
-        //{ fn: getGeneratedMessageHandler, ...GENERATED_MESSAGE_GET },
+        { fn: getCounterHandler, ...COUNTER_GET },
       ],
-      { params, sessionId: userSessionId, body }
+      { params, sessionId: userSessionId, body, header }
     );
     if (result) {
       response = result;

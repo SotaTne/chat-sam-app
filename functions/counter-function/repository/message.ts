@@ -1,10 +1,5 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import {
-  DynamoDBDocumentClient,
-  PutCommand,
-  PutCommandInput,
-  QueryCommand,
-} from "@aws-sdk/lib-dynamodb";
+import { QueryCommand } from "@aws-sdk/lib-dynamodb";
+import { AbstractDynamoDB } from "./dynamo_db";
 
 export type MessageItem = {
   MessageNo: number;
@@ -14,54 +9,31 @@ export type MessageItem = {
   Dummy?: string;
 };
 
-export class MessageRepository {
-  private client: DynamoDBClient;
-  private docClient: DynamoDBDocumentClient;
-  private table_name = process.env.MESSAGE_TABLE || "MessageTable";
+export class MessageRepository extends AbstractDynamoDB {
+  tableName = process.env.MESSAGE_TABLE || "MessageTable";
 
-  constructor() {
-    this.client = new DynamoDBClient({ region: "ap-northeast-1" });
-    this.docClient = DynamoDBDocumentClient.from(this.client);
-  }
-
-  async getMessagesFromTimeStamp(
+  async getMessagesFromTimeStampRange(
     startTimestamp: number,
     endTimestamp: number
   ): Promise<MessageItem[]> {
     if (startTimestamp > endTimestamp) {
       throw new Error("startTimestamp must be <= endTimestamp");
     }
+
     const command = new QueryCommand({
-      TableName: this.table_name,
+      TableName: this.tableName,
+      IndexName: "CreatedAtIndex", // GSI を明示的に指定
       KeyConditionExpression:
         "Dummy = :dummy AND CreatedAt BETWEEN :low AND :high",
       ExpressionAttributeValues: {
         ":dummy": "ALL",
         ":low": startTimestamp,
-        ":high": endTimestamp, // 上限
+        ":high": endTimestamp,
       },
-      ScanIndexForward: true,
+      ScanIndexForward: true, // 昇順（古い→新しい）
     });
 
     const result = await this.docClient.send(command);
-    return {
-      data: (result.Items ?? []) as MessageItem[],
-      isGetAll: count === max - last,
-    };
+    return (result.Items ?? []) as MessageItem[];
   }
-
-  // /** 単一メッセージ取得 */
-  // async getMessageById(messageNo: number) {
-  //   const command = new QueryCommand({
-  //     TableName: "MessageTable",
-  //     KeyConditionExpression: "Dummy = :dummy AND MessageNo = :no",
-  //     ExpressionAttributeValues: {
-  //       ":dummy": "ALL",
-  //       ":no": messageNo,
-  //     },
-  //   });
-
-  //   const result = await this.docClient.send(command);
-  //   return result.Items?.[0] as MessageItem | undefined;
-  // }
 }
