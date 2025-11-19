@@ -9,7 +9,7 @@ export abstract class AbstractDynamoDB {
   constructor() {
     const config = process.env.AWS_SAM_LOCAL
       ? {
-          endpoint: "http://host.docker.internal:8000", // DynamoDB Local
+          endpoint: "http://localhost:8000", // DynamoDB Local
           region: "ap-northeast-1",
           credentials: {
             accessKeyId: "dummy",

@@ -1,23 +1,12 @@
 {
-  "TableName": "MessageTable",
+  "TableName": "CounterRangeTable",
   "AttributeDefinitions": [
-    { "AttributeName": "Dummy", "AttributeType": "S" },
-    { "AttributeName": "MessageNo", "AttributeType": "N" },
-    { "AttributeName": "CreatedAt", "AttributeType": "N" }
+    { "AttributeName": "RecordId", "AttributeType": "S" }
   ],
-  "KeySchema": [
-    { "AttributeName": "Dummy", "KeyType": "HASH" },
-    { "AttributeName": "MessageNo", "KeyType": "RANGE" }
-  ],
+  "KeySchema": [{ "AttributeName": "RecordId", "KeyType": "HASH" }],
   "BillingMode": "PAY_PER_REQUEST",
-  "GlobalSecondaryIndexes": [
-    {
-      "IndexName": "CreatedAtIndex",
-      "KeySchema": [
-        { "AttributeName": "Dummy", "KeyType": "HASH" },
-        { "AttributeName": "CreatedAt", "KeyType": "RANGE" }
-      ],
-      "Projection": { "ProjectionType": "ALL" }
-    }
-  ]
+  "TimeToLiveSpecification": {
+    "AttributeName": "ExpirationDate",
+    "Enabled": true
+  }
 }

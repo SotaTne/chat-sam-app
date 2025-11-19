@@ -1,0 +1,32 @@
+{
+  "name": "chat-sam-app",
+  "version": "1.0.0",
+  "description": "sandbox という profile を作成して、名前を sandbox-dev として作成する",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "jest --config jest.config.ts --runInBand"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SotaTne/chat-sam-app.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SotaTne/chat-sam-app/issues"
+  },
+  "homepage": "https://github.com/SotaTne/chat-sam-app#readme",
+  "devDependencies": {
+    "@aws-sdk/lib-dynamodb": "^3.934.0",
+    "@jest/types": "^30.2.0",
+    "@types/jest": "^29.5.2",
+    "@types/node": "^24.10.1",
+    "aws-sdk-client-mock": "^4.1.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.4.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

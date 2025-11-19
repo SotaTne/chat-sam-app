@@ -1,8 +1,23 @@
 {
-  "TableName": "MessageCounterTable",
+  "TableName": "MessageTable",
   "AttributeDefinitions": [
-    { "AttributeName": "CounterId", "AttributeType": "S" }
+    { "AttributeName": "Dummy", "AttributeType": "S" },
+    { "AttributeName": "MessageNo", "AttributeType": "N" },
+    { "AttributeName": "CreatedAt", "AttributeType": "N" }
   ],
-  "KeySchema": [{ "AttributeName": "CounterId", "KeyType": "HASH" }],
-  "BillingMode": "PAY_PER_REQUEST"
+  "KeySchema": [
+    { "AttributeName": "Dummy", "KeyType": "HASH" },
+    { "AttributeName": "MessageNo", "KeyType": "RANGE" }
+  ],
+  "BillingMode": "PAY_PER_REQUEST",
+  "GlobalSecondaryIndexes": [
+    {
+      "IndexName": "CreatedAtIndex",
+      "KeySchema": [
+        { "AttributeName": "Dummy", "KeyType": "HASH" },
+        { "AttributeName": "CreatedAt", "KeyType": "RANGE" }
+      ],
+      "Projection": { "ProjectionType": "ALL" }
+    }
+  ]
 }

@@ -1,8 +1,12 @@
 {
-  "TableName": "CounterRangeTable",
+  "TableName": "SessionTable",
   "AttributeDefinitions": [
-    { "AttributeName": "RecordId", "AttributeType": "S" }
+    { "AttributeName": "SessionId", "AttributeType": "S" }
   ],
-  "KeySchema": [{ "AttributeName": "RecordId", "KeyType": "HASH" }],
-  "BillingMode": "PAY_PER_REQUEST"
+  "KeySchema": [{ "AttributeName": "SessionId", "KeyType": "HASH" }],
+  "BillingMode": "PAY_PER_REQUEST",
+  "TimeToLiveSpecification": {
+    "AttributeName": "ExpirationDate",
+    "Enabled": true
+  }
 }

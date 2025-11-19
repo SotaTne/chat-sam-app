@@ -1,9 +1,4 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import {
-  DynamoDBDocumentClient,
-  PutCommand,
-  ScanCommand,
-} from "@aws-sdk/lib-dynamodb";
+import { ScanCommand } from "@aws-sdk/lib-dynamodb";
 import { AbstractDynamoDB } from "./dynamo_db";
 
 export type MessageRangeItems = {

@@ -1,7 +1,6 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
-// 継承される前提のクラス
 export abstract class AbstractDynamoDB {
   client: DynamoDBClient;
   docClient: DynamoDBDocumentClient;
@@ -9,7 +8,7 @@ export abstract class AbstractDynamoDB {
   constructor() {
     const config = process.env.AWS_SAM_LOCAL
       ? {
-          endpoint: "http://host.docker.internal:8000", // DynamoDB Local
+          endpoint: "http://localhost:8000", // DynamoDB Local
           region: "ap-northeast-1",
           credentials: {
             accessKeyId: "dummy",

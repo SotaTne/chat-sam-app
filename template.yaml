@@ -17,6 +17,7 @@ Globals:
         COUNTER_RANGE_TABLE: !Ref CounterRangeTable
         DUMMY_VALUE: "ALL"
         CREATED_AT_GSI: CreatedAtIndex
+        LOGO_BUCKET: !Ref LogoBucket # S3バケット名を環境変数に設定
 
 Resources:
   # ------------------------
@@ -97,6 +98,8 @@ Resources:
             TableName: !Ref CounterRangeTable
         - DynamoDBCrudPolicy:
             TableName: !Ref MessageCounterTable
+        - S3ReadPolicy:
+            BucketName: !Ref LogoBucket
       Events:
         GetMessages:
           Type: Api

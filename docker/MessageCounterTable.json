@@ -1,8 +1,8 @@
 {
-  "TableName": "SessionTable",
+  "TableName": "MessageCounterTable",
   "AttributeDefinitions": [
-    { "AttributeName": "SessionId", "AttributeType": "S" }
+    { "AttributeName": "CounterId", "AttributeType": "S" }
   ],
-  "KeySchema": [{ "AttributeName": "SessionId", "KeyType": "HASH" }],
+  "KeySchema": [{ "AttributeName": "CounterId", "KeyType": "HASH" }],
   "BillingMode": "PAY_PER_REQUEST"
 }

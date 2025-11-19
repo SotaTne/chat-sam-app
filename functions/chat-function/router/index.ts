@@ -1,11 +1,24 @@
 import { APIGatewayProxyResult } from "aws-lambda";
 import { handlerArgs } from "../config";
+import { getS3Object } from "../helper/s3-image";
 
-export function getIndexHandler(args: handlerArgs): APIGatewayProxyResult {
+export async function getIndexHandler(
+  args: handlerArgs
+): Promise<APIGatewayProxyResult> {
   const { params } = args;
   const defaultPage = params?.page ? parseInt(params.page) : 1;
   const perPage = params?.perPage ? parseInt(params.perPage) : 10;
   const authHeader = args.header["Authorization"] || "";
+  const logoBucket = process.env.LOGO_BUCKET || "logo-bucket";
+  const logoKey = "images/logo.webp";
+  const logo = await getS3Object({
+    bucketName: logoBucket,
+    key: logoKey,
+    type: "asBuffer",
+  });
+
+  const logoBase64 = logo ? logo.toString("base64") : "";
+
   return {
     statusCode: 200,
     headers: { "Content-Type": "text/html; charset=utf-8" },
@@ -19,6 +32,18 @@ export function getIndexHandler(args: handlerArgs): APIGatewayProxyResult {
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
 <body class="bg-gray-100 p-6">
+  <header class="flex items-center space-x-4 mb-6">
+    ${
+      logoBase64 !== ""
+        ? `<img src="data:image/webp;base64,${logoBase64}" class="h-10" alt="Logo">`
+        : `<div class='h-10 w-10 bg-gray-300 rounded'> 
+        LogoIsNotFound <br>
+        Bucket:${logoBucket} <br>
+        Key:${logoKey}
+      </div>`
+    }
+    <h1 class="text-3xl font-bold">Chat App</h1>
+  </header>
   <div class="max-w-4xl mx-auto bg-white p-4 rounded shadow">
     <h1 class="text-3xl font-bold mb-6">Chat App</h1>
 
