@@ -1,5 +1,7 @@
-import { ScanCommand } from "@aws-sdk/lib-dynamodb";
-import { AbstractDynamoDB } from "./dynamo_db";
+import {
+  DynamoDBDocumentClient,
+  ScanCommand,
+} from "@aws-sdk/lib-dynamodb";
 
 export type MessageRangeItems = {
   RecordId: string; // HASHキー
@@ -11,23 +13,30 @@ export type MessageRangeItems = {
   ExpirationDate: Date; // レコード有効期限（TTL）
 };
 
-export class MessageRangeRepository extends AbstractDynamoDB {
-  tableName = process.env.COUNTER_RANGE_TABLE || "CounterRangeTable";
+export class MessageRangeRepository {
+  private readonly tableName: string;
+
+  constructor(private readonly docClient: DynamoDBDocumentClient) {
+    this.tableName = process.env.COUNTER_RANGE_TABLE || "CounterRangeTable";
+  }
 
   /** 全ての集計データを取得 */
-  async getAllCounters() {
+  async getAllCounters(): Promise<MessageRangeItems[]> {
     const command = new ScanCommand({
       TableName: this.tableName,
     });
+
     const result = await this.docClient.send(command);
 
     const data = (result.Items ?? []) as Array<
       Omit<MessageRangeItems, "ExpirationDate"> & { ExpirationDate: number }
     >;
+
     const transformedData: MessageRangeItems[] = data.map((item) => ({
       ...item,
       ExpirationDate: new Date(item.ExpirationDate * 1000),
     }));
+
     return transformedData;
   }
 }

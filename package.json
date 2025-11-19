@@ -19,7 +19,6 @@
   },
   "homepage": "https://github.com/SotaTne/chat-sam-app#readme",
   "devDependencies": {
-    "@aws-sdk/lib-dynamodb": "^3.934.0",
     "@jest/types": "^30.2.0",
     "@types/jest": "^29.5.2",
     "@types/node": "^24.10.1",

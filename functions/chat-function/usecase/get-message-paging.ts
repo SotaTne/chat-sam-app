@@ -1,5 +1,11 @@
+import { createDocClient } from "../repository/dynamo_db";
 import { MessageRepository } from "../repository/message";
 import { MessageCounterRepository } from "../repository/message-counter";
+
+const docClient = createDocClient();
+
+const messageCounterRepository = new MessageCounterRepository(docClient);
+const messageRepository = new MessageRepository(docClient);
 
 export async function GetMessagePaging({
   page,
@@ -8,8 +14,7 @@ export async function GetMessagePaging({
   page: number;
   perPage: number;
 }) {
-  const messageRepository = new MessageRepository();
-  const messageCounterRepository = new MessageCounterRepository();
+
   let maxCount: number;
   try {
     maxCount = await messageCounterRepository.getCurrent();

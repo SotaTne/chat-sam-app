@@ -1,7 +1,10 @@
+import { createDocClient } from "../repository/dynamo_db";
 import { MessageRangeRepository } from "../repository/message-range";
 
+const docClient = createDocClient();
+const messageRangeRepository = new MessageRangeRepository(docClient);
+
 export async function GetCollectInfo() {
-  const messageRangeRepository = new MessageRangeRepository();
   try {
     const info = await messageRangeRepository.getAllCounters();
     return info;

@@ -1,14 +1,18 @@
 import {
+  DynamoDBDocumentClient,
   GetCommand,
   GetCommandInput,
   UpdateCommand,
   UpdateCommandInput,
 } from "@aws-sdk/lib-dynamodb";
-import { AbstractDynamoDB } from "./dynamo_db";
 
-export class MessageCounterRepository extends AbstractDynamoDB {
-  tableName = process.env.MESSAGE_COUNTER_TABLE || "MessageCounterTable";
-  private counterId = "MESSAGE_COUNTER"; // 常にこのキーを使う
+export class MessageCounterRepository {
+  private readonly tableName: string;
+  private readonly counterId = "MESSAGE_COUNTER"; // 常にこのキーを使う
+
+  constructor(private readonly docClient: DynamoDBDocumentClient) {
+    this.tableName = process.env.MESSAGE_COUNTER_TABLE || "MessageCounterTable";
+  }
 
   /** 次のMessageNoを取得してインクリメント */
   async nextMessageNo(): Promise<number> {

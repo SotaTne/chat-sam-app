@@ -1,10 +1,13 @@
 import { defaultExpirationSeconds } from "../config";
+import { createDocClient } from "../repository/dynamo_db";
 import { SessionRepository } from "../repository/session";
+
+const docClient = createDocClient();
+const sessionRepository = new SessionRepository(docClient);
 
 export async function CreateSession(): Promise<string> {
   // UUID v4 を生成
   const sessionId = crypto.randomUUID();
-  const sessionRepository = new SessionRepository();
   try {
     await sessionRepository.upsertSession({
       SessionId: sessionId,

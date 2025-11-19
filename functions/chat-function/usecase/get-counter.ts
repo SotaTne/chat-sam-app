@@ -1,3 +1,4 @@
+import { createDocClient } from "../repository/dynamo_db";
 import { MessageItem, MessageRepository } from "../repository/message";
 import {
   type MessageRangeItems,
@@ -9,9 +10,11 @@ type RangeMessage = {
   messages: MessageItem[];
 };
 
+const docClient = createDocClient();
+const messageRepository = new MessageRepository(docClient);
+const messageRangeRepository = new MessageRangeRepository(docClient);
+
 export async function GetCounter(): Promise<RangeMessage[]> {
-  const messageRepository = new MessageRepository();
-  const messageRangeRepository = new MessageRangeRepository();
   const ranges: MessageRangeItems[] =
     await messageRangeRepository.getAllCounters();
   const result: RangeMessage[] = [];

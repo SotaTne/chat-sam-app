@@ -1,9 +1,9 @@
 import {
+  DynamoDBDocumentClient,
   PutCommand,
   PutCommandInput,
   QueryCommand,
 } from "@aws-sdk/lib-dynamodb";
-import { AbstractDynamoDB } from "./dynamo_db";
 
 export type MessageItem = {
   MessageNo: number;
@@ -13,8 +13,12 @@ export type MessageItem = {
   Dummy?: string;
 };
 
-export class MessageRepository extends AbstractDynamoDB {
-  tableName = process.env.MESSAGE_TABLE || "MessageTable";
+export class MessageRepository {
+  private readonly tableName: string;
+
+  constructor(private readonly docClient: DynamoDBDocumentClient) {
+    this.tableName = process.env.MESSAGE_TABLE || "MessageTable";
+  }
 
   /** メッセージ登録 */
   async putMessage(
@@ -66,12 +70,13 @@ export class MessageRepository extends AbstractDynamoDB {
     const result = await this.docClient.send(command);
     return (result.Items ?? []) as MessageItem[];
   }
+
   /**
    * @var last 前回取得した最新の MessageNo
    * @var max 現在の最新の MessageNo
    * @var limit 取得上限（デフォルト100件）
    */
-  /** lastから最新まで全て取得 */ //
+  /** lastから最新まで全て取得 */
   async getMessagesFromLast(
     last: number,
     max: number,

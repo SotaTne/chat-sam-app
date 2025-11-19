@@ -1,20 +1,24 @@
 import {
+  DynamoDBDocumentClient,
   PutCommand,
   GetCommand,
   // DeleteCommand,
 } from "@aws-sdk/lib-dynamodb";
-import { AbstractDynamoDB } from "./dynamo_db";
 
 export interface SessionItem {
   SessionId: string;
   ExpirationDate: Date;
 }
 
-export class SessionRepository extends AbstractDynamoDB {
-  tableName = process.env.SESSION_TABLE || "SessionTable";
+export class SessionRepository {
+  private readonly tableName: string;
+
+  constructor(private readonly docClient: DynamoDBDocumentClient) {
+    this.tableName = process.env.SESSION_TABLE || "SessionTable";
+  }
 
   /** sessionId を新規作成 or 更新 */
-  async upsertSession(item: SessionItem) {
+  async upsertSession(item: SessionItem): Promise<void> {
     const command = new PutCommand({
       TableName: this.tableName,
       Item: {
@@ -42,9 +46,15 @@ export class SessionRepository extends AbstractDynamoDB {
       const data = await this.docClient.send(command);
       if (!data.Item) return undefined;
 
+      const { ExpirationDate, ...rest } = data.Item as {
+        ExpirationDate: number;
+        [key: string]: any;
+      };
+
       return {
-        ...data.Item,
-        ExpirationDate: new Date(data.Item.ExpirationDate * 1000), // 秒→ミリ秒変換を追加
+        ...rest,
+        SessionId: rest.SessionId,
+        ExpirationDate: new Date(ExpirationDate * 1000),
       } as SessionItem;
     } catch (error) {
       console.error("Error getting session:", error);

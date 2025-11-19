@@ -1,11 +1,16 @@
-import { getCounterHandler } from "../../../functions/chat-function/router/get-counter";
 import { mockClient } from "aws-sdk-client-mock";
-import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { 
+  DynamoDBDocumentClient, 
+  ScanCommand 
+} from "../../../functions/chat-function/node_modules/@aws-sdk/lib-dynamodb";
+
 import {
   resetMockData,
   setupSpecificTableMocks,
   mockCounterRangeItems,
 } from "./mock";
+
+import { getCounterHandler } from "../../../functions/chat-function/router/get-counter";
 
 const ddbMock = mockClient(DynamoDBDocumentClient);
 
@@ -18,13 +23,13 @@ const tables: {
   counterRangeTable: true,
   messageTable: true,
 };
+
 beforeAll(() => {
   setupSpecificTableMocks(ddbMock, tables);
 });
 
 afterEach(() => {
-  ddbMock.reset();
-  resetMockData();
+  resetMockData(); // ddbMock.reset() は呼ばない
 });
 
 describe("GetCounterHandler", () => {

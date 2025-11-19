@@ -5,16 +5,33 @@ import {
   QueryCommand,
   UpdateCommand,
   PutCommand,
-} from "@aws-sdk/lib-dynamodb";
+} from "../../../functions/chat-function/node_modules/@aws-sdk/lib-dynamodb";
 
 type ScanMockMap = Record<string, any[]>;
+
+// ========================================
+// Table name constants (env + fallback)
+// ========================================
+const MESSAGE_TABLE = process.env.MESSAGE_TABLE || "MessageTable";
+const SESSION_TABLE = process.env.SESSION_TABLE || "SessionTable";
+const MESSAGE_COUNTER_TABLE =
+  process.env.MESSAGE_COUNTER_TABLE || "MessageCounterTable";
+const COUNTER_RANGE_TABLE =
+  process.env.COUNTER_RANGE_TABLE || "CounterRangeTable";
+
+// ========================================
+// Core mock setup
+// ========================================
 
 export function setupDynamoMocks(
   ddbMock: ReturnType<typeof mockClient>,
   scanMap: ScanMockMap
 ) {
-  ddbMock.reset();
+  // ★ reset はテスト側で制御する。ここでは触らない。
 
+  // ========================================
+  // Scan mocks (tables passed via scanMap)
+  // ========================================
   for (const [tableName, items] of Object.entries(scanMap)) {
     ddbMock
       .on(ScanCommand, { TableName: tableName })
@@ -28,7 +45,7 @@ export function setupDynamoMocks(
   // MessageNo BETWEEN クエリ（ascending/descending対応）
   ddbMock
     .on(QueryCommand, {
-      TableName: "MessageTable",
+      TableName: MESSAGE_TABLE,
       KeyConditionExpression:
         "Dummy = :dummy AND MessageNo BETWEEN :low AND :high",
     })
@@ -52,7 +69,7 @@ export function setupDynamoMocks(
   // getMessagesFromTimeStampRange用のQueryCommand (CreatedAt BETWEEN with GSI)
   ddbMock
     .on(QueryCommand, {
-      TableName: "MessageTable",
+      TableName: MESSAGE_TABLE,
       IndexName: "CreatedAtIndex",
       KeyConditionExpression:
         "Dummy = :dummy AND CreatedAt BETWEEN :low AND :high",
@@ -73,7 +90,7 @@ export function setupDynamoMocks(
   // ========================================
 
   // putMessage用のPutCommand（モックデータに追加）
-  ddbMock.on(PutCommand, { TableName: "MessageTable" }).callsFake((input) => {
+  ddbMock.on(PutCommand, { TableName: MESSAGE_TABLE }).callsFake((input) => {
     const newItem = input.Item as any;
     if (newItem) {
       // 既存のMessageNoがある場合は更新、なければ追加
@@ -95,7 +112,7 @@ export function setupDynamoMocks(
   // ========================================
 
   // getSession用のGetCommand
-  ddbMock.on(GetCommand, { TableName: "SessionTable" }).callsFake((input) => {
+  ddbMock.on(GetCommand, { TableName: SESSION_TABLE }).callsFake((input) => {
     const sessionId = input.Key?.SessionId as string;
     const session = mockSessionItems.find(
       (item) => item.SessionId === sessionId
@@ -109,7 +126,7 @@ export function setupDynamoMocks(
   });
 
   // upsertSession用のPutCommand（モックデータに追加/更新）
-  ddbMock.on(PutCommand, { TableName: "SessionTable" }).callsFake((input) => {
+  ddbMock.on(PutCommand, { TableName: SESSION_TABLE }).callsFake((input) => {
     const newItem = input.Item as any;
     if (newItem) {
       // 既存のSessionIdがある場合は更新、なければ追加
@@ -132,7 +149,7 @@ export function setupDynamoMocks(
 
   // getCurrent用のGetCommand
   ddbMock
-    .on(GetCommand, { TableName: "MessageCounterTable" })
+    .on(GetCommand, { TableName: MESSAGE_COUNTER_TABLE })
     .callsFake((input) => {
       const counterId = input.Key?.CounterId as string;
       const counter = mockMessageCounterItems.find(
@@ -148,7 +165,7 @@ export function setupDynamoMocks(
 
   // nextMessageNo用のUpdateCommand
   ddbMock
-    .on(UpdateCommand, { TableName: "MessageCounterTable" })
+    .on(UpdateCommand, { TableName: MESSAGE_COUNTER_TABLE })
     .callsFake((input) => {
       const counterId = input.Key?.CounterId as string;
       const counter = mockMessageCounterItems.find(
@@ -167,10 +184,7 @@ export function setupDynamoMocks(
       }
     });
 
-  // ========================================
-  // CounterRangeTable Scan Command (already handled above)
-  // ========================================
-  // getAllCounters用のScanCommandは上記のループで処理済み
+  // CounterRangeTable の Scan は上の scanMap 経由で既に設定済み
 }
 
 // ========================================
@@ -242,7 +256,9 @@ export const mockCounterRangeItems = [
     MessageCount: 15,
     UserCount: 5,
     CreatedAt: Math.floor(new Date("2024-11-19T06:00:00Z").getTime() / 1000),
-    ExpirationDate: Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000), // 30日後
+    ExpirationDate: Math.floor(
+      (Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000
+    ), // 30日後
   },
   {
     RecordId: "range-2024-11-19-06",
@@ -251,7 +267,9 @@ export const mockCounterRangeItems = [
     MessageCount: 23,
     UserCount: 8,
     CreatedAt: Math.floor(new Date("2024-11-19T12:00:00Z").getTime() / 1000),
-    ExpirationDate: Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000), // 30日後
+    ExpirationDate: Math.floor(
+      (Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000
+    ), // 30日後
   },
   {
     RecordId: "range-2024-11-18-18",
@@ -260,7 +278,9 @@ export const mockCounterRangeItems = [
     MessageCount: 7,
     UserCount: 3,
     CreatedAt: Math.floor(new Date("2024-11-19T00:00:00Z").getTime() / 1000),
-    ExpirationDate: Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000), // 30日後
+    ExpirationDate: Math.floor(
+      (Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000
+    ), // 30日後
   },
 ];
 
@@ -271,10 +291,10 @@ export const mockCounterRangeItems = [
 /** 全テーブルのモックデータをまとめて設定するヘルパー関数 */
 export function setupAllTableMocks(ddbMock: ReturnType<typeof mockClient>) {
   const allTableMocks: ScanMockMap = {
-    MessageTable: mockMessageItems,
-    SessionTable: mockSessionItems,
-    MessageCounterTable: mockMessageCounterItems,
-    CounterRangeTable: mockCounterRangeItems,
+    [MESSAGE_TABLE]: mockMessageItems,
+    [SESSION_TABLE]: mockSessionItems,
+    [MESSAGE_COUNTER_TABLE]: mockMessageCounterItems,
+    [COUNTER_RANGE_TABLE]: mockCounterRangeItems,
   };
 
   setupDynamoMocks(ddbMock, allTableMocks);
@@ -293,16 +313,16 @@ export function setupSpecificTableMocks(
   const selectedMocks: ScanMockMap = {};
 
   if (tables.messageTable) {
-    selectedMocks.MessageTable = mockMessageItems;
+    selectedMocks[MESSAGE_TABLE] = mockMessageItems;
   }
   if (tables.sessionTable) {
-    selectedMocks.SessionTable = mockSessionItems;
+    selectedMocks[SESSION_TABLE] = mockSessionItems;
   }
   if (tables.messageCounterTable) {
-    selectedMocks.MessageCounterTable = mockMessageCounterItems;
+    selectedMocks[MESSAGE_COUNTER_TABLE] = mockMessageCounterItems;
   }
   if (tables.counterRangeTable) {
-    selectedMocks.CounterRangeTable = mockCounterRangeItems;
+    selectedMocks[COUNTER_RANGE_TABLE] = mockCounterRangeItems;
   }
 
   setupDynamoMocks(ddbMock, selectedMocks);
