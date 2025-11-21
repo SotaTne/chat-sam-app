@@ -1,8 +1,8 @@
-import { DynamoDBClient, DeleteTableCommand, CreateTableCommand,CreateTableCommandInput, DescribeTableCommand } from '../../functions/chat-function/node_modules/@aws-sdk/client-dynamodb';
-import CounterRangeTableSchema from "../../docker/CounterRangeTable.json" assert { type: "json" };
-import MessageCounterTableSchema from "../../docker/MessageCounterTable.json" assert { type: "json" };
-import MessageTableSchema from "../../docker/MessageTable.json" assert { type: "json" };
-import SessionTableSchema from "../../docker/SessionTable.json" assert { type: "json" };
+import { DynamoDBClient, DeleteTableCommand, CreateTableCommand, CreateTableCommandInput, DescribeTableCommand, ListTablesCommand } from '../../../functions/counter-function/node_modules/@aws-sdk/client-dynamodb';
+import CounterRangeTableSchema from "../../../docker/CounterRangeTable.json" assert { type: "json" };
+import MessageCounterTableSchema from "../../../docker/MessageCounterTable.json" assert { type: "json" };
+import MessageTableSchema from "../../../docker/MessageTable.json" assert { type: "json" };
+import SessionTableSchema from "../../../docker/SessionTable.json" assert { type: "json" };
 
 const TABLE_NAMES = [
   "MessageTable",
@@ -104,26 +104,20 @@ export async function cleanUP(tableName: TableName): Promise<void> {
 
   const dynamoClient = getDynamoDBClient();
   
-  try {
-    console.log(`🧹 ${tableName} をクリーンアップ中...`);
-    
+  try {    
     // テーブルの削除
     const exists = await tableExists(dynamoClient, tableName);
     if (exists) {
-      console.log(`🗑️  ${tableName} を削除中...`);
       await dynamoClient.send(new DeleteTableCommand({ TableName: tableName }));
       await waitForTableDeletion(dynamoClient, tableName);
-      console.log(`✅ ${tableName} 削除完了`);
     } else {
       console.log(`ℹ️  ${tableName} は存在しません`);
     }
     
     // テーブルのスキーマに基づいて再作成
-    console.log(`🔨 ${tableName} を作成中...`);
     const schema:CreateTableCommandInput = TABLE_SCHEMAS[tableName];
     await dynamoClient.send(new CreateTableCommand(schema));
     await waitForTableActive(dynamoClient, tableName);
-    console.log(`✅ ${tableName} 作成完了`);
     
   } catch (error) {
     console.error(`❌ ${tableName} のクリーンアップに失敗:`, error);
@@ -137,13 +131,9 @@ export async function cleanUP(tableName: TableName): Promise<void> {
  * 全テーブルをクリーンアップ
  */
 export async function cleanUpAllTables(): Promise<void> {
-  console.log('🧹 全テーブルクリーンアップ開始...');
-  
   for (const tableName of TABLE_NAMES) {
     await cleanUP(tableName);
   }
-  
-  console.log('✅ 全テーブルクリーンアップ完了');
 }
 
 /**
@@ -153,10 +143,8 @@ export async function healthCheck(): Promise<boolean> {
   const dynamoClient = getDynamoDBClient();
   
   try {
-    console.log('🔍 DynamoDB Local ヘルスチェック...');
-    const { ListTablesCommand } = await import('../../functions/chat-function/node_modules/@aws-sdk/client-dynamodb');
+    const { ListTablesCommand } = await import('../../../functions/counter-function/node_modules/@aws-sdk/client-dynamodb');
     await dynamoClient.send(new ListTablesCommand({}));
-    console.log('✅ DynamoDB Local is healthy.');
     return true;
   } catch (error) {
     console.error(`❌ DynamoDB Local health check failed: ${error}`);

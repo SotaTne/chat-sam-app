@@ -1,5 +1,4 @@
-import { QueryCommand } from "@aws-sdk/lib-dynamodb";
-import { AbstractDynamoDB } from "./dynamo_db";
+import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
 
 export type MessageItem = {
   MessageNo: number;
@@ -9,8 +8,12 @@ export type MessageItem = {
   Dummy?: string;
 };
 
-export class MessageRepository extends AbstractDynamoDB {
-  tableName = process.env.MESSAGE_TABLE || "MessageTable";
+export class MessageRepository {
+  private readonly tableName: string;
+
+  constructor(private readonly docClient: DynamoDBDocumentClient) {
+    this.tableName = process.env.MESSAGE_TABLE || "MessageTable";
+  }
 
   async getMessagesFromTimeStampRange(
     startTimestamp: number,

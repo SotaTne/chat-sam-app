@@ -1,23 +1,22 @@
+// dynamoClient.ts
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
-// 継承される前提のクラス
-export abstract class AbstractDynamoDB {
-  client: DynamoDBClient;
-  docClient: DynamoDBDocumentClient;
-  abstract tableName: string;
-  constructor() {
-    const config = process.env.AWS_SAM_LOCAL
-      ? {
-          endpoint: "http://localhost:8000", // DynamoDB Local
-          region: "ap-northeast-1",
-          credentials: {
-            accessKeyId: "dummy",
-            secretAccessKey: "dummy",
-          },
-        }
-      : { region: "ap-northeast-1" };
-    this.client = new DynamoDBClient(config);
-    this.docClient = DynamoDBDocumentClient.from(this.client);
-  }
+export function createDocClient() {
+  const isTest = process.env.JEST_WORKER_ID !== undefined;
+  const useLocal = process.env.AWS_SAM_LOCAL === "1" || isTest;
+
+  const config = useLocal
+    ? {
+        endpoint: "http://localhost:8000",
+        region: "ap-northeast-1",
+        credentials: {
+          accessKeyId: "dummy",
+          secretAccessKey: "dummy",
+        },
+      }
+    : { region: "ap-northeast-1" };
+
+  const base = new DynamoDBClient(config);
+  return DynamoDBDocumentClient.from(base);
 }

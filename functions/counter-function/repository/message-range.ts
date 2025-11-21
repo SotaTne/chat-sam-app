@@ -1,5 +1,4 @@
-import { PutCommand } from "@aws-sdk/lib-dynamodb";
-import { AbstractDynamoDB } from "./dynamo_db";
+import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 
 export type MessageRangeItems = {
   RecordId: string; // HASHキー
@@ -11,8 +10,12 @@ export type MessageRangeItems = {
   ExpirationDate: Date; // レコード有効期限（TTL）
 };
 
-export class MessageRangeRepository extends AbstractDynamoDB {
-  tableName = process.env.COUNTER_RANGE_TABLE || "CounterRangeTable";
+export class MessageRangeRepository {
+  private readonly tableName: string;
+
+  constructor(private readonly docClient: DynamoDBDocumentClient) {
+    this.tableName = process.env.COUNTER_RANGE_TABLE || "CounterRangeTable";
+  }
 
   /** 集計データを保存 */
   async saveCounter(item: MessageRangeItems) {

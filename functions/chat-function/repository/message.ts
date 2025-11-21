@@ -82,10 +82,10 @@ export class MessageRepository {
     max: number,
     limit: number = 100
   ): Promise<{ data: MessageItem[]; isGetAll: boolean }> {
-    if (last >= max) return { data: [], isGetAll: true };
     if (last < 0) throw new Error("last must be >= 0");
     if (max < 0) throw new Error("max must be >= 0");
     if (limit < 1) throw new Error("limit must be >= 1");
+    if (last >= max) return { data: [], isGetAll: true };
 
     // 取得件数を制限
     const count = Math.min(max - last, limit);

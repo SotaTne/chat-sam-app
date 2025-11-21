@@ -31,3 +31,24 @@ services:
       - "./docker/init-tables.sh:/tmp/init-tables.sh"
     networks:
       - chat-sam-app-net
+
+  # minio:
+  #   image: "minio/minio"
+  #   restart: always
+  #   ports:
+  #     - ${MINIO_EXPOSE_API_PORT:-9000}:9000
+  #     - ${MINIO_EXPOSE_CONSOLE_PORT:-9001}:9001
+  #   command: ['server', '/data', '--console-address', ':9001']
+  #   tmpfs:
+  #     - /data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "curl -I http://localhost:9000/minio/health/live"]
+  # init-minio:
+  #   image: "minio/mc:RELEASE.2025-04-16T18-13-26Z"
+  #   env_file: .env
+  #   volumes:
+  #     - ./init-minio.sh:/init-minio.sh
+  #     - ./assets:/assets:cached
+  #   entrypoint: /init-minio.sh
+  #   depends_on:
+  #     - minio

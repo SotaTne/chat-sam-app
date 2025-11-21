@@ -5,7 +5,7 @@ import {
 } from "../../../functions/chat-function/node_modules/@aws-sdk/lib-dynamodb";
 
 import { MessageCounterRepository } from '../../../functions/chat-function/repository/message-counter';
-import { cleanUP, cleanUpAllTables, getDynamoDBClient, healthCheck } from '../utils';
+import { cleanUP, cleanUpAllTables, getDynamoDBClient, healthCheck } from './utils';
 
 describe('MessageCounterRepository Integration Tests', () => {
   let dynamoClient: DynamoDBClient;
@@ -13,10 +13,7 @@ describe('MessageCounterRepository Integration Tests', () => {
   let repository: MessageCounterRepository;
   const tableName = 'MessageCounterTable';
 
-  beforeAll(async () => {
-    // ヘルスチェック
-    console.log('🔍 DynamoDB Local ヘルスチェック...');
-    
+  beforeAll(async () => {    
     dynamoClient = getDynamoDBClient();
     
     await healthCheck()

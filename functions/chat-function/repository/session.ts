@@ -19,6 +19,10 @@ export class SessionRepository {
 
   /** sessionId を新規作成 or 更新 */
   async upsertSession(item: SessionItem): Promise<void> {
+    if (!item.SessionId || item.SessionId.trim() === '') {
+      throw new Error('SessionId cannot be empty');
+    }
+    
     const command = new PutCommand({
       TableName: this.tableName,
       Item: {
@@ -37,6 +41,10 @@ export class SessionRepository {
 
   /** sessionId からセッション情報を取得 */
   async getSession(sessionId: string): Promise<SessionItem | undefined> {
+    if (!sessionId || sessionId.trim() === '') {
+      throw new Error('SessionId cannot be empty');
+    }
+    
     const command = new GetCommand({
       TableName: this.tableName,
       Key: { SessionId: sessionId },

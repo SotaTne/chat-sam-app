@@ -1,13 +1,16 @@
 import { defaultExpirationSeconds } from "../config";
+import { createDocClient } from "../repository/dynamo_db";
 import { MessageRepository } from "../repository/message";
 import {
   MessageRangeRepository,
   type MessageRangeItems,
 } from "../repository/message-range";
 
+const docClient = createDocClient();
+const messageRangeRepository = new MessageRangeRepository(docClient);
+const messageRepository = new MessageRepository(docClient);
+
 export async function saveMessageRange() {
-  const messageRangeRepository = new MessageRangeRepository();
-  const messageRepository = new MessageRepository();
   const now = Math.floor(Date.now() / 1000); // 現在時刻（Unix timestamp 秒）
   const sixHoursAgo = now - 6 * 60 * 60; // 6時間前（秒）
 
