@@ -5,13 +5,17 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "jest --config jest.config.ts --runInBand"
+    "test": "jest --config jest.config.ts --runInBand",
+    "dump_cloud": "uv --env .env scripts/dump_cloud.py"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/SotaTne/chat-sam-app.git"
   },
   "keywords": [],
+  "workspaces": [
+    "functions/*"
+  ],
   "author": "",
   "license": "ISC",
   "bugs": {
@@ -26,6 +30,7 @@
     "jest": "^29.7.0",
     "ts-jest": "^29.4.5",
     "ts-node": "^10.9.2",
+    "turbo": "^2.6.1",
     "typescript": "^5.9.3"
   }
 }

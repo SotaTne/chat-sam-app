@@ -5,6 +5,12 @@ Transform: AWS::Serverless-2016-10-31
 
 Description: Chat SAM app stack — メッセージ閲覧/投稿、セッション管理、定期 Bot 生成 を仕様どおり実装
 
+Parameters:
+  Prefix:
+    Type: String
+    Default: "chat-sam-app"
+    Description: "リソース名に付与するプレフィックス"
+
 Globals:
   Function:
     Timeout: 3 # 秒
@@ -17,7 +23,7 @@ Globals:
         COUNTER_RANGE_TABLE: !Ref CounterRangeTable
         DUMMY_VALUE: "ALL"
         CREATED_AT_GSI: CreatedAtIndex
-        LOGO_BUCKET: !Ref LogoBucket # S3バケット名を環境変数に設定
+        LOGO_BUCKET: !Ref LogoBucket
 
 Resources:
   # ------------------------
@@ -26,7 +32,7 @@ Resources:
   ChatUserPool:
     Type: AWS::Cognito::UserPool
     Properties:
-      UserPoolName: ChatUserPool
+      UserPoolName: !Sub "${Prefix}-UserPool"
       AutoVerifiedAttributes:
         - email
       UsernameAttributes:
@@ -42,27 +48,24 @@ Resources:
   ChatUserPoolClient:
     Type: AWS::Cognito::UserPoolClient
     Properties:
-      ClientName: ChatUserPoolClient
+      ClientName: !Sub "${Prefix}-UserPoolClient"
       UserPoolId: !Ref ChatUserPool
       GenerateSecret: false
-      # ExplicitAuthFlows:
-      #   - ADMIN_NO_SRP_AUTH
-      #   - USER_PASSWORD_AUTH
       PreventUserExistenceErrors: ENABLED
       AllowedOAuthFlowsUserPoolClient: true
       CallbackURLs:
-        - "https://oauth.pstmn.io/v1/callback" # 処理が終わったあとに情報を持ってPostmanに戻るためのURL
+        - "https://oauth.pstmn.io/v1/callback"
       SupportedIdentityProviders:
-        - "COGNITO" # IDプロバイダを指定
+        - "COGNITO"
       AllowedOAuthFlows:
-        - "code" # どのOAuthFlowを指定
+        - "code"
       AllowedOAuthScopes:
         - "openid"
 
   ChatUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-      Domain: !Sub "${AWS::StackName}-chat-domain"
+      Domain: !Sub "${Prefix}-chat-domain"
       UserPoolId: !Ref ChatUserPool
 
   # ------------------------
@@ -131,7 +134,6 @@ Resources:
             Path: /message-counter
             Method: GET
             RestApiId: !Ref ChatApi
-
     Metadata:
       BuildMethod: esbuild
       BuildProperties:
@@ -147,12 +149,12 @@ Resources:
       RetentionInDays: 3
 
   # ------------------------
-  # Session Table
+  # DynamoDB テーブル群（Prefix を付与）
   # ------------------------
   SessionTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: SessionTable
+      TableName: !Sub "${Prefix}-SessionTable"
       AttributeDefinitions:
         - AttributeName: SessionId
           AttributeType: S
@@ -164,13 +166,10 @@ Resources:
         AttributeName: ExpirationDate
         Enabled: true
 
-  # ------------------------
-  # Message Table
-  # ------------------------
   MessageTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: MessageTable
+      TableName: !Sub "${Prefix}-MessageTable"
       AttributeDefinitions:
         - AttributeName: MessageNo
           AttributeType: N
@@ -194,13 +193,10 @@ Resources:
           Projection:
             ProjectionType: ALL
 
-  # ------------------------
-  # Message Counter Table
-  # ------------------------
   MessageCounterTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: MessageCounterTable
+      TableName: !Sub "${Prefix}-MessageCounterTable"
       AttributeDefinitions:
         - AttributeName: CounterId
           AttributeType: S
@@ -209,13 +205,10 @@ Resources:
           KeyType: HASH
       BillingMode: PAY_PER_REQUEST
 
-  # ------------------------
-  # CounterRangeTable
-  # ------------------------
   CounterRangeTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: CounterRangeTable
+      TableName: !Sub "${Prefix}-CounterRangeTable"
       AttributeDefinitions:
         - AttributeName: RecordId
           AttributeType: S
@@ -228,77 +221,46 @@ Resources:
         Enabled: true
 
   # ------------------------
-  # Counter Lambda
+  # S3 バケット (LogoBucket) — Prefix を付与
   # ------------------------
-  CollectFunc:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: functions/counter-function
-      Handler: app.lambdaHandler
-      Runtime: nodejs20.x
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref MessageTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref CounterRangeTable
-    Metadata:
-      BuildMethod: esbuild
-      BuildProperties:
-        Minify: true
-        Target: "es2020"
-        EntryPoints:
-          - app.ts
-
-  # ------------------------
-  # Hourly StateMachine
-  # ------------------------
-  CountHourMessage:
-    Type: AWS::Serverless::StateMachine
-    Properties:
-      DefinitionUri: statemachine/generate.asl.json
-      DefinitionSubstitutions:
-        CollectFuncArn: !GetAtt CollectFunc.Arn
-      Events:
-        HourlyTradingSchedule:
-          Type: ScheduleV2
-          Properties:
-            ScheduleExpression: rate(6 hour)
-            FlexibleTimeWindow:
-              Mode: FLEXIBLE
-              MaximumWindowInMinutes: 5
-            ScheduleExpressionTimezone: Asia/Tokyo
-      Policies:
-        - LambdaInvokePolicy:
-            FunctionName: !Ref CollectFunc
   LogoBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "${AWS::StackName}-logo-bucket"
-      AccessControl: Private
+      BucketName: !Sub "${Prefix}-logo-bucket"
       VersioningConfiguration:
         Status: Enabled
       CorsConfiguration:
         CorsRules:
-          - AllowedOrigins:
-              - "*"
-            AllowedMethods:
-              - GET
-              - PUT
-              - POST
-              - DELETE
-              - HEAD
-            AllowedHeaders:
-              - "*"
+          - AllowedOrigins: ["*"]
+            AllowedMethods: [GET, PUT, POST, DELETE, HEAD]
+            AllowedHeaders: ["*"]
             MaxAge: 3000
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+
 Outputs:
+  SessionTableName:
+    Description: "Name of SessionTable"
+    Value: !Ref SessionTable
+
   MessageTableName:
+    Description: "Name of MessageTable"
     Value: !Ref MessageTable
+
+  MessageCounterTableName:
+    Description: "Name of MessageCounterTable"
+    Value: !Ref MessageCounterTable
+
   CounterRangeTableName:
+    Description: "Name of CounterRangeTable"
     Value: !Ref CounterRangeTable
-  StateMachineArn:
-    Value: !Ref CountHourMessage
-  ChatApiUrl:
-    Description: "Base URL for the Chat API"
-    Value: !Sub "https://${ChatApi}.execute-api.${AWS::Region}.amazonaws.com/${ChatApi.Stage}"
+
   LogoBucketName:
+    Description: "Name of S3 bucket for logos"
     Value: !Ref LogoBucket
+
+  # API の URL を出力するならこちら
+  ChatApiUrl:
+    Description: "Base URL for Chat API"
+    Value: !Sub "https://${ChatApi}.execute-api.${AWS::Region}.amazonaws.com/${ChatApi.Stage}"

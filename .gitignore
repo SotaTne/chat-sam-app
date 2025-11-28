@@ -4,3 +4,7 @@ volume/
 .DS_Store
 *.db
 .aws-sam/
+.env
+.turbo
+/build
+.minio.sys/
