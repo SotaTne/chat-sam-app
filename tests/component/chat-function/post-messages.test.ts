@@ -1,7 +1,5 @@
 import { mockClient } from "aws-sdk-client-mock";
-import {
-  DynamoDBDocumentClient,
-} from "../../../functions/chat-function/node_modules/@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
 import {
   resetMockData,
@@ -46,7 +44,9 @@ describe("PostMessageHandler", () => {
 
     // 実行前の配列スナップショット（実配列のコピー）
     const beforeMessages = mockMessageItems.map((x) => ({ ...x }));
-    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({ ...x }));
+    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({
+      ...x,
+    }));
 
     const originalMessageCount = mockMessageItems.length;
     const originalCounterCount = mockMessageCounterItems.length;
@@ -61,7 +61,7 @@ describe("PostMessageHandler", () => {
     expect(responseBody).toHaveProperty("message");
     expect(responseBody.message).toBe("Message posted successfully");
 
-    // ★ MessageTableに新しいメッセージが追加されていることを確認（データ整合性チェック）
+    // ★ chat-sam-app-MessageTableに新しいメッセージが追加されていることを確認（データ整合性チェック）
     expect(mockMessageItems.length).toBe(originalMessageCount + 1);
 
     // 追加されたメッセージを検索
@@ -71,23 +71,23 @@ describe("PostMessageHandler", () => {
     expect(newMessage.Dummy).toBe("ALL");
     expect(typeof newMessage.MessageNo).toBe("number");
     expect(typeof newMessage.CreatedAt).toBe("number");
-    
+
     // MessageNoが既存の最大値（4）より大きいことを確認
-    const existingMessageNos = beforeMessages.map(m => m.MessageNo);
+    const existingMessageNos = beforeMessages.map((m) => m.MessageNo);
     const maxExistingMessageNo = Math.max(...existingMessageNos);
     expect(newMessage.MessageNo).toBeGreaterThan(maxExistingMessageNo);
     expect(newMessage.MessageNo).toBe(maxExistingMessageNo + 1); // 連番生成を確認
 
-    // ★ MessageCounterTableが適切に更新されていることを確認
+    // ★ chat-sam-app-MessageCounterTableが適切に更新されていることを確認
     const messageCounter = mockMessageCounterItems.find(
-      counter => counter.CounterId === "MESSAGE_COUNTER"
+      (counter) => counter.CounterId === "MESSAGE_COUNTER"
     );
     expect(messageCounter).toBeDefined();
     expect(messageCounter!.Count).toBe(newMessage.MessageNo); // CounterとMessageNoの同期確認
-    
+
     // ★ ビジネスロジック検証：MessageCounter.Countが増加していることを確認
     const beforeCounter = beforeMessageCounters.find(
-      counter => counter.CounterId === "MESSAGE_COUNTER"
+      (counter) => counter.CounterId === "MESSAGE_COUNTER"
     );
     expect(messageCounter!.Count).toBe((beforeCounter?.Count || 0) + 1);
 
@@ -107,7 +107,9 @@ describe("PostMessageHandler", () => {
 
     // 実行前の配列スナップショット
     const beforeMessages = mockMessageItems.map((x) => ({ ...x }));
-    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({ ...x }));
+    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({
+      ...x,
+    }));
 
     // Act
     const result = await postMessageHandler(mockHandlerArgs);
@@ -136,7 +138,9 @@ describe("PostMessageHandler", () => {
 
     // 実行前の配列スナップショット
     const beforeMessages = mockMessageItems.map((x) => ({ ...x }));
-    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({ ...x }));
+    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({
+      ...x,
+    }));
 
     // Act
     const result = await postMessageHandler(mockHandlerArgs);
@@ -161,7 +165,9 @@ describe("PostMessageHandler", () => {
 
     // 実行前の配列スナップショット
     const beforeMessages = mockMessageItems.map((x) => ({ ...x }));
-    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({ ...x }));
+    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({
+      ...x,
+    }));
 
     // Act
     const result = await postMessageHandler(mockHandlerArgs);
@@ -186,7 +192,9 @@ describe("PostMessageHandler", () => {
 
     // 実行前の配列スナップショット
     const beforeMessages = mockMessageItems.map((x) => ({ ...x }));
-    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({ ...x }));
+    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({
+      ...x,
+    }));
 
     // Act
     const result = await postMessageHandler(mockHandlerArgs);
@@ -212,14 +220,18 @@ describe("PostMessageHandler", () => {
 
     // 実行前の配列スナップショット
     const beforeMessages = mockMessageItems.map((x) => ({ ...x }));
-    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({ ...x }));
+    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({
+      ...x,
+    }));
 
     // Act
     const result = await postMessageHandler(mockHandlerArgs);
 
     // Assert
     expect(result.statusCode).toBe(400);
-    expect(result.body).toContain("contents is required and must be a string <= 2048 characters");
+    expect(result.body).toContain(
+      "contents is required and must be a string <= 2048 characters"
+    );
 
     // ★ DynamoDBのモック配列が変化していないことを確認
     expect(mockMessageItems).toEqual(beforeMessages);
@@ -236,7 +248,7 @@ describe("PostMessageHandler", () => {
     };
     const message2Args = {
       params: null,
-      sessionId: "user-2", 
+      sessionId: "user-2",
       body: { contents: "2つ目のメッセージ" },
       header: {},
     };
@@ -264,7 +276,9 @@ describe("PostMessageHandler", () => {
     expect(addedMessages[1].UserId).toBe("user-2");
 
     // ★ MessageNo が適切にインクリメントされていることを確認
-    expect(addedMessages[1].MessageNo).toBeGreaterThan(addedMessages[0].MessageNo);
+    expect(addedMessages[1].MessageNo).toBeGreaterThan(
+      addedMessages[0].MessageNo
+    );
 
     // 元の配列（追加前）部分は変化していないことを確認
     const messagesWithoutNew = mockMessageItems.slice(0, originalMessageCount);

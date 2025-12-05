@@ -14,15 +14,15 @@ export class SessionRepository {
   private readonly tableName: string;
 
   constructor(private readonly docClient: DynamoDBDocumentClient) {
-    this.tableName = process.env.SESSION_TABLE || "SessionTable";
+    this.tableName = process.env.SESSION_TABLE || "chat-sam-app-SessionTable";
   }
 
   /** sessionId を新規作成 or 更新 */
   async upsertSession(item: SessionItem): Promise<void> {
-    if (!item.SessionId || item.SessionId.trim() === '') {
-      throw new Error('SessionId cannot be empty');
+    if (!item.SessionId || item.SessionId.trim() === "") {
+      throw new Error("SessionId cannot be empty");
     }
-    
+
     const command = new PutCommand({
       TableName: this.tableName,
       Item: {
@@ -41,10 +41,10 @@ export class SessionRepository {
 
   /** sessionId からセッション情報を取得 */
   async getSession(sessionId: string): Promise<SessionItem | undefined> {
-    if (!sessionId || sessionId.trim() === '') {
-      throw new Error('SessionId cannot be empty');
+    if (!sessionId || sessionId.trim() === "") {
+      throw new Error("SessionId cannot be empty");
     }
-    
+
     const command = new GetCommand({
       TableName: this.tableName,
       Key: { SessionId: sessionId },

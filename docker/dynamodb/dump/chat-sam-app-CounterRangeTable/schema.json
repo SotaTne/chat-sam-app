@@ -1,0 +1,52 @@
+{
+  "Table": {
+    "AttributeDefinitions": [
+      {
+        "AttributeName": "RecordId",
+        "AttributeType": "S"
+      }
+    ],
+    "TableName": "chat-sam-app-CounterRangeTable",
+    "KeySchema": [
+      {
+        "AttributeName": "RecordId",
+        "KeyType": "HASH"
+      }
+    ],
+    "TableStatus": "ACTIVE",
+    "CreationDateTime": "2025-11-28T08:19:04.398000+00:00",
+    "ProvisionedThroughput": {
+      "NumberOfDecreasesToday": 0,
+      "ReadCapacityUnits": 0,
+      "WriteCapacityUnits": 0
+    },
+    "TableSizeBytes": 0,
+    "ItemCount": 0,
+    "TableArn": "arn:aws:dynamodb:ap-northeast-1:151129268022:table/chat-sam-app-CounterRangeTable",
+    "TableId": "97dbb63c-8e79-44a7-a6ba-1fa6e2a53885",
+    "BillingModeSummary": {
+      "BillingMode": "PAY_PER_REQUEST",
+      "LastUpdateToPayPerRequestDateTime": "2025-11-28T08:19:04.398000+00:00"
+    },
+    "DeletionProtectionEnabled": false,
+    "WarmThroughput": {
+      "ReadUnitsPerSecond": 12000,
+      "WriteUnitsPerSecond": 4000,
+      "Status": "ACTIVE"
+    }
+  },
+  "ResponseMetadata": {
+    "RequestId": "CNAO1D6K14PCA2OM2J5709NSNJVV4KQNSO5AEMVJF66Q9ASUAAJG",
+    "HTTPStatusCode": 200,
+    "HTTPHeaders": {
+      "server": "Server",
+      "date": "Fri, 05 Dec 2025 05:12:31 GMT",
+      "content-type": "application/x-amz-json-1.0",
+      "content-length": "881",
+      "connection": "keep-alive",
+      "x-amzn-requestid": "CNAO1D6K14PCA2OM2J5709NSNJVV4KQNSO5AEMVJF66Q9ASUAAJG",
+      "x-amz-crc32": "3717501622"
+    },
+    "RetryAttempts": 0
+  }
+}

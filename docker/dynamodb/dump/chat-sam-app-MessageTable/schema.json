@@ -1,0 +1,96 @@
+{
+  "Table": {
+    "AttributeDefinitions": [
+      {
+        "AttributeName": "CreatedAt",
+        "AttributeType": "N"
+      },
+      {
+        "AttributeName": "Dummy",
+        "AttributeType": "S"
+      },
+      {
+        "AttributeName": "MessageNo",
+        "AttributeType": "N"
+      }
+    ],
+    "TableName": "chat-sam-app-MessageTable",
+    "KeySchema": [
+      {
+        "AttributeName": "Dummy",
+        "KeyType": "HASH"
+      },
+      {
+        "AttributeName": "MessageNo",
+        "KeyType": "RANGE"
+      }
+    ],
+    "TableStatus": "ACTIVE",
+    "CreationDateTime": "2025-11-28T08:19:04.467000+00:00",
+    "ProvisionedThroughput": {
+      "NumberOfDecreasesToday": 0,
+      "ReadCapacityUnits": 0,
+      "WriteCapacityUnits": 0
+    },
+    "TableSizeBytes": 0,
+    "ItemCount": 0,
+    "TableArn": "arn:aws:dynamodb:ap-northeast-1:151129268022:table/chat-sam-app-MessageTable",
+    "TableId": "e17fa393-95b0-4829-9292-66a7513a47d7",
+    "BillingModeSummary": {
+      "BillingMode": "PAY_PER_REQUEST",
+      "LastUpdateToPayPerRequestDateTime": "2025-11-28T08:19:04.467000+00:00"
+    },
+    "GlobalSecondaryIndexes": [
+      {
+        "IndexName": "CreatedAtIndex",
+        "KeySchema": [
+          {
+            "AttributeName": "Dummy",
+            "KeyType": "HASH"
+          },
+          {
+            "AttributeName": "CreatedAt",
+            "KeyType": "RANGE"
+          }
+        ],
+        "Projection": {
+          "ProjectionType": "ALL"
+        },
+        "IndexStatus": "ACTIVE",
+        "ProvisionedThroughput": {
+          "NumberOfDecreasesToday": 0,
+          "ReadCapacityUnits": 0,
+          "WriteCapacityUnits": 0
+        },
+        "IndexSizeBytes": 0,
+        "ItemCount": 0,
+        "IndexArn": "arn:aws:dynamodb:ap-northeast-1:151129268022:table/chat-sam-app-MessageTable/index/CreatedAtIndex",
+        "WarmThroughput": {
+          "ReadUnitsPerSecond": 12000,
+          "WriteUnitsPerSecond": 4000,
+          "Status": "ACTIVE"
+        }
+      }
+    ],
+    "DeletionProtectionEnabled": false,
+    "WarmThroughput": {
+      "ReadUnitsPerSecond": 12000,
+      "WriteUnitsPerSecond": 4000,
+      "Status": "ACTIVE"
+    }
+  },
+  "ResponseMetadata": {
+    "RequestId": "Q70L8UHH52SJPPRL4BDLRM6RRVVV4KQNSO5AEMVJF66Q9ASUAAJG",
+    "HTTPStatusCode": 200,
+    "HTTPHeaders": {
+      "server": "Server",
+      "date": "Fri, 05 Dec 2025 05:12:31 GMT",
+      "content-type": "application/x-amz-json-1.0",
+      "content-length": "1570",
+      "connection": "keep-alive",
+      "x-amzn-requestid": "Q70L8UHH52SJPPRL4BDLRM6RRVVV4KQNSO5AEMVJF66Q9ASUAAJG",
+      "x-amz-crc32": "3375856997"
+    },
+    "RetryAttempts": 0
+  }
+}

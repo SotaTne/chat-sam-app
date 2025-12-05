@@ -1,0 +1,4 @@
+
+> chat-sam-app@1.0.0 test
+> jest --config jest.config.ts --runInBand tests/component
+

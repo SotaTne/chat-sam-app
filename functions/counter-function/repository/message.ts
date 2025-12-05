@@ -12,7 +12,7 @@ export class MessageRepository {
   private readonly tableName: string;
 
   constructor(private readonly docClient: DynamoDBDocumentClient) {
-    this.tableName = process.env.MESSAGE_TABLE || "MessageTable";
+    this.tableName = process.env.MESSAGE_TABLE || "chat-sam-app-MessageTable";
   }
 
   async getMessagesFromTimeStampRange(

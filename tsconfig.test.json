@@ -1,7 +1,25 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "types": ["jest", "node"]
+    "types": ["jest", "node"],
+    "baseUrl": ".",
+    "paths": {
+      "@aws-sdk/lib-dynamodb": [
+        "functions/*/node_modules/@aws-sdk/lib-dynamodb",
+        "functions/chat-function/node_modules/@aws-sdk/lib-dynamodb",
+        "functions/counter-function/node_modules/@aws-sdk/lib-dynamodb"
+      ],
+      "@aws-sdk/client-dynamodb": [
+        "functions/*/node_modules/@aws-sdk/client-dynamodb",
+        "functions/chat-function/node_modules/@aws-sdk/client-dynamodb",
+        "functions/counter-function/node_modules/@aws-sdk/client-dynamodb"
+      ]
+    }
   },
-  "include": ["functions/**/*.ts", "tests/**/*.ts"]
+  "include": [
+    "functions/**/*.ts",
+    "tests/**/*.ts",
+    "functions/**/node_modules/@aws-sdk/lib-dynamodb/**/*.ts",
+    "functions/**/node_modules/@aws-sdk/client-dynamodb/**/*.ts"
+  ]
 }

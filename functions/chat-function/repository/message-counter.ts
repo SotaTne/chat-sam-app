@@ -11,7 +11,8 @@ export class MessageCounterRepository {
   private readonly counterId = "MESSAGE_COUNTER"; // 常にこのキーを使う
 
   constructor(private readonly docClient: DynamoDBDocumentClient) {
-    this.tableName = process.env.MESSAGE_COUNTER_TABLE || "MessageCounterTable";
+    this.tableName =
+      process.env.MESSAGE_COUNTER_TABLE || "chat-sam-app-MessageCounterTable";
   }
 
   /** 次のMessageNoを取得してインクリメント */

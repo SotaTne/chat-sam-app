@@ -1,7 +1,4 @@
-import {
-  DynamoDBDocumentClient,
-  ScanCommand,
-} from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
 
 export type MessageRangeItems = {
   RecordId: string; // HASHキー
@@ -17,7 +14,8 @@ export class MessageRangeRepository {
   private readonly tableName: string;
 
   constructor(private readonly docClient: DynamoDBDocumentClient) {
-    this.tableName = process.env.COUNTER_RANGE_TABLE || "CounterRangeTable";
+    this.tableName =
+      process.env.COUNTER_RANGE_TABLE || "chat-sam-app-CounterRangeTable";
   }
 
   /** 全ての集計データを取得 */

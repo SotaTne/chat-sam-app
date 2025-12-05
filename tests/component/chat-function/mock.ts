@@ -1,40 +1,135 @@
 import { mockClient } from "aws-sdk-client-mock";
 import {
+  DynamoDBDocumentClient,
   ScanCommand,
   GetCommand,
   QueryCommand,
   UpdateCommand,
   PutCommand,
-} from "../../../functions/chat-function/node_modules/@aws-sdk/lib-dynamodb";
-import { InitialMockCounterRangeItems, InitialMockMessageCounterItems, InitialMockMessageItems, InitialMockSessionItems } from "../../mock-data";
+} from "@aws-sdk/lib-dynamodb";
+
+// ========================================
+// Mock Data Definitions - 直接定義
+// ========================================
+
+/** MessageTable用のサンプルデータ */
+const InitialMockMessageItems = [
+  {
+    MessageNo: 1,
+    UserId: "user123",
+    Content: "Hello, this is the first message!",
+    CreatedAt: 1731980000, // 2024-11-19 02:00:00 UTC (range-2024-11-19-00の範囲内)
+    Dummy: "ALL",
+  },
+  {
+    MessageNo: 2,
+    UserId: "user456",
+    Content: "Second message from another user",
+    CreatedAt: 1731987200, // 2024-11-19 04:00:00 UTC (range-2024-11-19-00の範囲内)
+    Dummy: "ALL",
+  },
+  {
+    MessageNo: 3,
+    UserId: "user123",
+    Content: "Third message with some longer content to test various scenarios",
+    CreatedAt: 1732003200, // 2024-11-19 08:00:00 UTC (range-2024-11-19-06の範囲内)
+    Dummy: "ALL",
+  },
+  {
+    MessageNo: 4,
+    UserId: "user789",
+    Content: "Latest message for testing",
+    CreatedAt: 1732010400, // 2024-11-19 10:00:00 UTC (range-2024-11-19-06の範囲内)
+    Dummy: "ALL",
+  },
+];
+
+/** SessionTable用のサンプルデータ（UNIX秒で統一） */
+const InitialMockSessionItems = [
+  {
+    SessionId: "session-123",
+    ExpirationDate: Math.floor((Date.now() + 24 * 60 * 60 * 1000) / 1000), // 24時間後
+  },
+  {
+    SessionId: "session-456",
+    ExpirationDate: Math.floor((Date.now() + 12 * 60 * 60 * 1000) / 1000), // 12時間後
+  },
+  {
+    SessionId: "session-expired",
+    ExpirationDate: Math.floor((Date.now() - 60 * 60 * 1000) / 1000), // 1時間前（期限切れ）
+  },
+];
+
+/** MessageCounterTable用のサンプルデータ */
+const InitialMockMessageCounterItems = [
+  {
+    CounterId: "MESSAGE_COUNTER",
+    Count: 4, // 現在のメッセージ数
+  },
+];
+
+/** CounterRangeTable用のサンプルデータ */
+const InitialMockCounterRangeItems = [
+  {
+    RecordId: "range-2024-11-19-00",
+    Start: Math.floor(new Date("2024-11-19T00:00:00Z").getTime() / 1000),
+    End: Math.floor(new Date("2024-11-19T06:00:00Z").getTime() / 1000),
+    MessageCount: 15,
+    UserCount: 5,
+    CreatedAt: Math.floor(new Date("2024-11-19T06:00:00Z").getTime() / 1000),
+    ExpirationDate: Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000), // 30日後
+  },
+  {
+    RecordId: "range-2024-11-19-06",
+    Start: Math.floor(new Date("2024-11-19T06:00:00Z").getTime() / 1000),
+    End: Math.floor(new Date("2024-11-19T12:00:00Z").getTime() / 1000),
+    MessageCount: 23,
+    UserCount: 8,
+    CreatedAt: Math.floor(new Date("2024-11-19T12:00:00Z").getTime() / 1000),
+    ExpirationDate: Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000), // 30日後
+  },
+  {
+    RecordId: "range-2024-11-18-18",
+    Start: Math.floor(new Date("2024-11-18T18:00:00Z").getTime() / 1000),
+    End: Math.floor(new Date("2024-11-19T00:00:00Z").getTime() / 1000),
+    MessageCount: 7,
+    UserCount: 3,
+    CreatedAt: Math.floor(new Date("2024-11-19T00:00:00Z").getTime() / 1000),
+    ExpirationDate: Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000), // 30日後
+  },
+];
 
 type ScanMockMap = Record<string, any[]>;
 
 // ========================================
 // Table name constants (env + fallback)
 // ========================================
-const MESSAGE_TABLE = process.env.MESSAGE_TABLE || "MessageTable";
-const SESSION_TABLE = process.env.SESSION_TABLE || "SessionTable";
+const MESSAGE_TABLE = process.env.MESSAGE_TABLE || "chat-sam-app-MessageTable";
+const SESSION_TABLE = process.env.SESSION_TABLE || "chat-sam-app-SessionTable";
 const MESSAGE_COUNTER_TABLE =
-  process.env.MESSAGE_COUNTER_TABLE || "MessageCounterTable";
+  process.env.MESSAGE_COUNTER_TABLE || "chat-sam-app-MessageCounterTable";
 const COUNTER_RANGE_TABLE =
-  process.env.COUNTER_RANGE_TABLE || "CounterRangeTable";
+  process.env.COUNTER_RANGE_TABLE || "chat-sam-app-CounterRangeTable";
 
 // ========================================
 // Mock Data Definitions (current mutable state)
 // ========================================
 
-/** MessageTable用のサンプルデータ */
+/** chat-sam-app-MessageTable用のサンプルデータ */
 export const mockMessageItems = InitialMockMessageItems.map((x) => ({ ...x }));
 
-/** SessionTable用のサンプルデータ（UNIX秒で統一） */
+/** chat-sam-app-SessionTable用のサンプルデータ（UNIX秒で統一） */
 export const mockSessionItems = InitialMockSessionItems.map((x) => ({ ...x }));
 
-/** MessageCounterTable用のサンプルデータ */
-export const mockMessageCounterItems = InitialMockMessageCounterItems.map((x) => ({ ...x }));
+/** chat-sam-app-MessageCounterTable用のサンプルデータ */
+export const mockMessageCounterItems = InitialMockMessageCounterItems.map(
+  (x) => ({ ...x })
+);
 
-/** CounterRangeTable用のサンプルデータ */
-export const mockCounterRangeItems = InitialMockCounterRangeItems.map((x) => ({ ...x }));
+/** chat-sam-app-CounterRangeTable用のサンプルデータ */
+export const mockCounterRangeItems = InitialMockCounterRangeItems.map((x) => ({
+  ...x,
+}));
 
 // ========================================
 // Immutable initial snapshots (readonly)
@@ -42,27 +137,19 @@ export const mockCounterRangeItems = InitialMockCounterRangeItems.map((x) => ({ 
 
 export const initialMockMessageItems: ReadonlyArray<
   (typeof mockMessageItems)[number]
-> = Object.freeze(
-  mockMessageItems.map((x) => Object.freeze({ ...x }))
-);
+> = Object.freeze(mockMessageItems.map((x) => Object.freeze({ ...x })));
 
 export const initialMockSessionItems: ReadonlyArray<
   (typeof mockSessionItems)[number]
-> = Object.freeze(
-  mockSessionItems.map((x) => Object.freeze({ ...x }))
-);
+> = Object.freeze(mockSessionItems.map((x) => Object.freeze({ ...x })));
 
 export const initialMockMessageCounterItems: ReadonlyArray<
   (typeof mockMessageCounterItems)[number]
-> = Object.freeze(
-  mockMessageCounterItems.map((x) => Object.freeze({ ...x }))
-);
+> = Object.freeze(mockMessageCounterItems.map((x) => Object.freeze({ ...x })));
 
 export const initialMockCounterRangeItems: ReadonlyArray<
   (typeof mockCounterRangeItems)[number]
-> = Object.freeze(
-  mockCounterRangeItems.map((x) => Object.freeze({ ...x }))
-);
+> = Object.freeze(mockCounterRangeItems.map((x) => Object.freeze({ ...x })));
 
 // ========================================
 // Core mock setup
@@ -78,13 +165,13 @@ export function setupDynamoMocks(
   // Scan mocks (tables passed via scanMap)
   // ========================================
   for (const [tableName, items] of Object.entries(scanMap)) {
-    ddbMock
-      .on(ScanCommand, { TableName: tableName })
-      .resolves({ Items: items });
+    ddbMock.on(ScanCommand, { TableName: tableName }).callsFake((input) => {
+      return Promise.resolve({ Items: items });
+    });
   }
 
   // ========================================
-  // MessageTable Query Commands
+  // chat-sam-app-MessageTable Query Commands
   // ========================================
 
   // MessageNo BETWEEN クエリ（ascending/descending対応）
@@ -131,7 +218,7 @@ export function setupDynamoMocks(
     });
 
   // ========================================
-  // MessageTable Put Commands
+  // chat-sam-app-MessageTable Put Commands
   // ========================================
 
   // putMessage用のPutCommand（モックデータに追加）
@@ -153,7 +240,7 @@ export function setupDynamoMocks(
   });
 
   // ========================================
-  // SessionTable Get/Put Commands
+  // chat-sam-app-SessionTable Get/Put Commands
   // ========================================
 
   // getSession用のGetCommand
@@ -189,7 +276,7 @@ export function setupDynamoMocks(
   });
 
   // ========================================
-  // MessageCounterTable Get/Update Commands
+  // chat-sam-app-MessageCounterTable Get/Update Commands
   // ========================================
 
   // getCurrent用のGetCommand
@@ -229,7 +316,7 @@ export function setupDynamoMocks(
       }
     });
 
-  // CounterRangeTable の Scan は上の scanMap 経由で既に設定済み
+  // chat-sam-app-CounterRangeTable の Scan は上の scanMap 経由で既に設定済み
 }
 
 // ========================================
@@ -282,28 +369,28 @@ export function setupSpecificTableMocks(
 
 /** モックデータをリセットして初期状態に戻す */
 export function resetMockData() {
-  // MessageTable
+  // chat-sam-app-MessageTable
   mockMessageItems.splice(
     0,
     mockMessageItems.length,
     ...initialMockMessageItems.map((x) => ({ ...x }))
   );
 
-  // SessionTable
+  // chat-sam-app-SessionTable
   mockSessionItems.splice(
     0,
     mockSessionItems.length,
     ...initialMockSessionItems.map((x) => ({ ...x }))
   );
 
-  // MessageCounterTable
+  // chat-sam-app-MessageCounterTable
   mockMessageCounterItems.splice(
     0,
     mockMessageCounterItems.length,
     ...initialMockMessageCounterItems.map((x) => ({ ...x }))
   );
 
-  // CounterRangeTable
+  // chat-sam-app-CounterRangeTable
   mockCounterRangeItems.splice(
     0,
     mockCounterRangeItems.length,

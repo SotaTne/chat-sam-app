@@ -1,8 +1,5 @@
 import { mockClient } from "aws-sdk-client-mock";
-import {
-  DynamoDBDocumentClient,
-  ScanCommand,
-} from "../../../functions/chat-function/node_modules/@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
 
 import {
   resetMockData,
@@ -58,7 +55,7 @@ describe("GetMessageCollectorHandler", () => {
     // レスポンス構造をチェック
     if (responseBody.info.length > 0) {
       const firstItem = responseBody.info[0];
-      
+
       // CounterRangeテーブルの項目の構造をチェック
       expect(firstItem).toHaveProperty("RecordId");
       expect(typeof firstItem.RecordId).toBe("string");
@@ -163,7 +160,7 @@ describe("GetMessageCollectorHandler", () => {
     // Arrange
     const mockHandlerArgs = {
       params: null,
-      sessionId: "test-session", 
+      sessionId: "test-session",
       body: null,
       header: {},
     };
@@ -172,11 +169,13 @@ describe("GetMessageCollectorHandler", () => {
     const additionalRange = {
       RecordId: "test-additional-range",
       Start: Math.floor(Date.now() / 1000) - 7200, // 2時間前
-      End: Math.floor(Date.now() / 1000) - 3600,   // 1時間前
+      End: Math.floor(Date.now() / 1000) - 3600, // 1時間前
       MessageCount: 10,
       UserCount: 3,
       CreatedAt: Math.floor(Date.now() / 1000) - 3600,
-      ExpirationDate: Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000),
+      ExpirationDate: Math.floor(
+        (Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000
+      ),
     };
 
     // データを追加
@@ -207,8 +206,12 @@ describe("GetMessageCollectorHandler", () => {
     expect(addedRangeInResponse.MessageCount).toBe(10);
     expect(addedRangeInResponse.UserCount).toBe(3);
     // 時刻は動的に変わるので、大まかな範囲でチェック
-    expect(addedRangeInResponse.Start).toBeGreaterThan(Math.floor(Date.now() / 1000) - 8000);
-    expect(addedRangeInResponse.End).toBeGreaterThan(Math.floor(Date.now() / 1000) - 4000);
+    expect(addedRangeInResponse.Start).toBeGreaterThan(
+      Math.floor(Date.now() / 1000) - 8000
+    );
+    expect(addedRangeInResponse.End).toBeGreaterThan(
+      Math.floor(Date.now() / 1000) - 4000
+    );
 
     // ★ DynamoDBのモック配列が変化していないことを確認（データ整合性チェック）
     expect(mockCounterRangeItems).toEqual(beforeCounterRanges);

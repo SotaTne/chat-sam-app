@@ -12,31 +12,31 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - "./docker/dynamodb:/home/dynamodblocal/data"
+      - "./docker/dynamodb/data:/home/dynamodblocal/data"
     working_dir: /home/dynamodblocal
     networks:
       - dynamodb-net
 
-  add-table:
-    image: amazon/aws-cli
-    depends_on:
-      - dynamodb-local
-    env_file: .env # ← 追加
-    entrypoint: ["/bin/sh", "/init-tables.sh"]
-    volumes:
-      - "./docker/MessageTable.json:/tmp/MessageTable.json"
-      - "./docker/SessionTable.json:/tmp/SessionTable.json"
-      - "./docker/MessageCounterTable.json:/tmp/MessageCounterTable.json"
-      - "./docker/CounterRangeTable.json:/tmp/CounterRangeTable.json"
-      - "./docker/init-tables.sh:/init-tables.sh"
-    networks:
-      - dynamodb-net
+  # add-table:
+  #   image: amazon/aws-cli
+  #   depends_on:
+  #     - dynamodb-local
+  #   env_file: .env # ← 追加
+  #   # entrypoint: ["/bin/sh", "/init-tables.sh"]
+  #   volumes:
+  #     # - "./docker/MessageTable.json:/tmp/MessageTable.json"
+  #     # - "./docker/SessionTable.json:/tmp/SessionTable.json"
+  #     # - "./docker/MessageCounterTable.json:/tmp/MessageCounterTable.json"
+  #     # - "./docker/CounterRangeTable.json:/tmp/chat-sam-app-CounterRangeTable.json"
+  #     # - "./docker/init-tables.sh:/init-tables.sh"
+  #   networks:
+  #     - dynamodb-net
 
   dynamodump:
     image: bchew/dynamodump
     working_dir: /app/dynamodb
     volumes:
-      - ./dump:/app/dynamodb/dump:cached
+      - ./docker/dynamodb/dump:/app/dynamodb/dump:cached
       - $HOME/.aws:/root/.aws:ro
     environment:
       - AWS_PROFILE=${AWS_PROFILE}

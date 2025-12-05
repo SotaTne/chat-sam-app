@@ -1,4 +1,4 @@
-/** MessageTable用のサンプルデータ */
+/** chat-sam-app-MessageTable用のサンプルデータ */
 export const MockMessageItems = [
   {
     MessageNo: 1,
@@ -30,7 +30,7 @@ export const MockMessageItems = [
   },
 ];
 
-/** SessionTable用のサンプルデータ（UNIX秒で統一） */
+/** chat-sam-app-SessionTable用のサンプルデータ（UNIX秒で統一） */
 export const MockSessionItems = [
   {
     SessionId: "session-123",
@@ -46,7 +46,7 @@ export const MockSessionItems = [
   },
 ];
 
-/** MessageCounterTable用のサンプルデータ */
+/** chat-sam-app-MessageCounterTable用のサンプルデータ */
 export const MockMessageCounterItems = [
   {
     CounterId: "MESSAGE_COUNTER",
@@ -54,7 +54,7 @@ export const MockMessageCounterItems = [
   },
 ];
 
-/** CounterRangeTable用のサンプルデータ */
+/** chat-sam-app-CounterRangeTable用のサンプルデータ */
 export const MockCounterRangeItems = [
   {
     RecordId: "range-2024-11-19-00",
@@ -63,9 +63,7 @@ export const MockCounterRangeItems = [
     MessageCount: 15,
     UserCount: 5,
     CreatedAt: Math.floor(new Date("2024-11-19T06:00:00Z").getTime() / 1000),
-    ExpirationDate: Math.floor(
-      (Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000
-    ), // 30日後
+    ExpirationDate: Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000), // 30日後
   },
   {
     RecordId: "range-2024-11-19-06",
@@ -74,9 +72,7 @@ export const MockCounterRangeItems = [
     MessageCount: 23,
     UserCount: 8,
     CreatedAt: Math.floor(new Date("2024-11-19T12:00:00Z").getTime() / 1000),
-    ExpirationDate: Math.floor(
-      (Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000
-    ), // 30日後
+    ExpirationDate: Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000), // 30日後
   },
   {
     RecordId: "range-2024-11-18-18",
@@ -85,9 +81,7 @@ export const MockCounterRangeItems = [
     MessageCount: 7,
     UserCount: 3,
     CreatedAt: Math.floor(new Date("2024-11-19T00:00:00Z").getTime() / 1000),
-    ExpirationDate: Math.floor(
-      (Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000
-    ), // 30日後
+    ExpirationDate: Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000), // 30日後
   },
 ];
 
@@ -97,24 +91,16 @@ export const MockCounterRangeItems = [
 
 export const InitialMockMessageItems: ReadonlyArray<
   (typeof MockMessageItems)[number]
-> = Object.freeze(
-  MockMessageItems.map((x) => Object.freeze({ ...x }))
-);
+> = Object.freeze(MockMessageItems.map((x) => Object.freeze({ ...x })));
 
 export const InitialMockSessionItems: ReadonlyArray<
   (typeof MockSessionItems)[number]
-> = Object.freeze(
-  MockSessionItems.map((x) => Object.freeze({ ...x }))
-);
+> = Object.freeze(MockSessionItems.map((x) => Object.freeze({ ...x })));
 
 export const InitialMockMessageCounterItems: ReadonlyArray<
   (typeof MockMessageCounterItems)[number]
-> = Object.freeze(
-  MockMessageCounterItems.map((x) => Object.freeze({ ...x }))
-);
+> = Object.freeze(MockMessageCounterItems.map((x) => Object.freeze({ ...x })));
 
 export const InitialMockCounterRangeItems: ReadonlyArray<
   (typeof MockCounterRangeItems)[number]
-> = Object.freeze(
-  MockCounterRangeItems.map((x) => Object.freeze({ ...x }))
-);
+> = Object.freeze(MockCounterRangeItems.map((x) => Object.freeze({ ...x })));

@@ -1,7 +1,5 @@
 import { mockClient } from "aws-sdk-client-mock";
-import {
-  DynamoDBDocumentClient,
-} from "../../../functions/chat-function/node_modules/@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
 import {
   resetMockData,
@@ -46,7 +44,9 @@ describe("GetMessagesHandler", () => {
 
     // 実行前の配列スナップショット（実配列のコピー）
     const beforeMessages = mockMessageItems.map((x) => ({ ...x }));
-    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({ ...x }));
+    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({
+      ...x,
+    }));
 
     // Act
     const result = await getMessagesHandler(mockHandlerArgs);
@@ -56,10 +56,10 @@ describe("GetMessagesHandler", () => {
 
     const responseBody = JSON.parse(result.body);
     expect(Array.isArray(responseBody)).toBe(true);
-    
+
     // デフォルトページング（page=1, perPage=20）で全メッセージが取得されることを検証
     expect(responseBody.length).toBe(4); // 既存の4つのメッセージ全てが取得される
-    
+
     // 降順ソート（ScanIndexForward: false）なので MessageNo [4,3,2,1] の順
     const messageNos = responseBody.map((msg: any) => msg.MessageNo);
     expect(messageNos).toEqual([4, 3, 2, 1]);
@@ -97,7 +97,9 @@ describe("GetMessagesHandler", () => {
 
     // 実行前の配列スナップショット
     const beforeMessages = mockMessageItems.map((x) => ({ ...x }));
-    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({ ...x }));
+    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({
+      ...x,
+    }));
 
     // Act
     const result = await getMessagesHandler(mockHandlerArgs);
@@ -110,10 +112,10 @@ describe("GetMessagesHandler", () => {
 
     // ページング動作を実際に検証: page=2, perPage=5 の場合
     // 既存のメッセージ数(4)で、降順ソート想定なら:
-    // page=1, perPage=5: MessageNo [4,3,2,1] (全て取得)  
+    // page=1, perPage=5: MessageNo [4,3,2,1] (全て取得)
     // page=2, perPage=5: 空配列 (2ページ目は存在しない)
     expect(responseBody.length).toBe(0); // 2ページ目なので空配列が期待値
-    
+
     // MessageCounterの値(4)とページング計算に基づく動作の検証
     // max=4, page=2, perPage=5 → (page-1)*perPage+1 = 6 > max なので取得範囲外
 
@@ -137,7 +139,9 @@ describe("GetMessagesHandler", () => {
 
     // 実行前の配列スナップショット（空配列）
     const beforeMessages = mockMessageItems.map((x) => ({ ...x }));
-    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({ ...x }));
+    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({
+      ...x,
+    }));
 
     // Act
     const result = await getMessagesHandler(mockHandlerArgs);
@@ -168,7 +172,9 @@ describe("GetMessagesHandler", () => {
 
     // 実行前の配列スナップショット
     const beforeMessages = mockMessageItems.map((x) => ({ ...x }));
-    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({ ...x }));
+    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({
+      ...x,
+    }));
 
     // Act
     const result = await getMessagesHandler(mockHandlerArgs);
@@ -223,7 +229,7 @@ describe("GetMessagesHandler", () => {
       },
       {
         MessageNo: 6, // 既存の最大MessageNo(4)の次の次
-        UserId: "test-user-2", 
+        UserId: "test-user-2",
         Content: "追加メッセージ2",
         CreatedAt: Math.floor(Date.now() / 1000) - 50,
         Dummy: "ALL",
@@ -242,7 +248,9 @@ describe("GetMessagesHandler", () => {
 
     // 実行前の配列スナップショット（追加データを含む）
     const beforeMessages = mockMessageItems.map((x) => ({ ...x }));
-    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({ ...x }));
+    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({
+      ...x,
+    }));
 
     // Act
     const result = await getMessagesHandler(mockHandlerArgs);
@@ -259,9 +267,7 @@ describe("GetMessagesHandler", () => {
     expect(messageNos).toContain(6);
 
     // 追加データが正しく反映されているかチェック
-    const addedMessage1 = responseBody.find(
-      (msg: any) => msg.MessageNo === 5
-    );
+    const addedMessage1 = responseBody.find((msg: any) => msg.MessageNo === 5);
     expect(addedMessage1).toBeDefined();
     expect(addedMessage1.Content).toBe("追加メッセージ1");
 
@@ -276,7 +282,7 @@ describe("GetMessagesHandler", () => {
     expect(addedMessagesInMock).toHaveLength(2);
 
     // テスト後に追加データを削除（クリーンアップ）
-    additionalMessages.forEach(addedMsg => {
+    additionalMessages.forEach((addedMsg) => {
       const indexToRemove = mockMessageItems.findIndex(
         (msg) => msg.MessageNo === addedMsg.MessageNo
       );

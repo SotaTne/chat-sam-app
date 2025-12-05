@@ -1,8 +1,0 @@
-{
-  "TableName": "MessageCounterTable",
-  "AttributeDefinitions": [
-    { "AttributeName": "CounterId", "AttributeType": "S" }
-  ],
-  "KeySchema": [{ "AttributeName": "CounterId", "KeyType": "HASH" }],
-  "BillingMode": "PAY_PER_REQUEST"
-}

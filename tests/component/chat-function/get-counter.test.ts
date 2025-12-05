@@ -1,7 +1,5 @@
 import { mockClient } from "aws-sdk-client-mock";
-import {
-  DynamoDBDocumentClient,
-} from "../../../functions/chat-function/node_modules/@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
 import {
   resetMockData,
@@ -58,9 +56,7 @@ describe("GetCounterHandler", () => {
     expect(Array.isArray(responseBody)).toBe(true);
 
     // handler が返した range の RecordId 一覧
-    const rangeIds: string[] = responseBody.map(
-      (rm: any) => rm.range.RecordId
-    );
+    const rangeIds: string[] = responseBody.map((rm: any) => rm.range.RecordId);
 
     // 初期レンジがすべてレスポンスに含まれていることを確認
     initialMockCounterRangeItems.forEach((base) => {
@@ -87,8 +83,12 @@ describe("GetCounterHandler", () => {
     }
 
     // ★ 実際のメッセージカウントと具体的なMessageNoを検証
-    const range00 = responseBody.find((rm: any) => rm.range.RecordId === "range-2024-11-19-00");
-    const range06 = responseBody.find((rm: any) => rm.range.RecordId === "range-2024-11-19-06");
+    const range00 = responseBody.find(
+      (rm: any) => rm.range.RecordId === "range-2024-11-19-00"
+    );
+    const range06 = responseBody.find(
+      (rm: any) => rm.range.RecordId === "range-2024-11-19-06"
+    );
 
     expect(range00).toBeDefined();
     expect(range06).toBeDefined();
@@ -96,22 +96,26 @@ describe("GetCounterHandler", () => {
     // range-2024-11-19-00 (00:00-06:00) には MessageNo 1, 2 が含まれるはず
     expect(Array.isArray(range00.messages)).toBe(true);
     expect(range00.messages.length).toBeGreaterThan(0);
-    
-    const range00MessageNos = range00.messages.map((m: any) => m.MessageNo).sort((a: number, b: number) => a - b);
+
+    const range00MessageNos = range00.messages
+      .map((m: any) => m.MessageNo)
+      .sort((a: number, b: number) => a - b);
     expect(range00MessageNos).toContain(1); // 02:00 のメッセージ
     expect(range00MessageNos).toContain(2); // 04:00 のメッセージ
-    
+
     // ★ 範囲集計ロジックの完全性検証：正確なセットを検証
     expect(range00MessageNos).toEqual([1, 2]); // 期待される完全なセット
 
     // range-2024-11-19-06 (06:00-12:00) には MessageNo 3, 4 が含まれるはず
     expect(Array.isArray(range06.messages)).toBe(true);
     expect(range06.messages.length).toBeGreaterThan(0);
-    
-    const range06MessageNos = range06.messages.map((m: any) => m.MessageNo).sort((a: number, b: number) => a - b);
+
+    const range06MessageNos = range06.messages
+      .map((m: any) => m.MessageNo)
+      .sort((a: number, b: number) => a - b);
     expect(range06MessageNos).toContain(3); // 08:00 のメッセージ
     expect(range06MessageNos).toContain(4); // 10:00 のメッセージ
-    
+
     // ★ 範囲集計ロジックの完全性検証：正確なセットを検証
     expect(range06MessageNos).toEqual([3, 4]); // 期待される完全なセット
 

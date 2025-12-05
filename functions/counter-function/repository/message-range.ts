@@ -14,7 +14,8 @@ export class MessageRangeRepository {
   private readonly tableName: string;
 
   constructor(private readonly docClient: DynamoDBDocumentClient) {
-    this.tableName = process.env.COUNTER_RANGE_TABLE || "CounterRangeTable";
+    this.tableName =
+      process.env.COUNTER_RANGE_TABLE || "chat-sam-app-CounterRangeTable";
   }
 
   /** 集計データを保存 */

@@ -1,7 +1,5 @@
 import { mockClient } from "aws-sdk-client-mock";
-import {
-  DynamoDBDocumentClient,
-} from "../../../functions/chat-function/node_modules/@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
 import {
   resetMockData,
@@ -26,7 +24,8 @@ const tables: {
   messageCounterTable: true,
 };
 
-beforeAll(() => {
+beforeEach(() => {
+  ddbMock.reset();
   setupSpecificTableMocks(ddbMock, tables);
 });
 
@@ -46,7 +45,9 @@ describe("GetMessagesLastHandler", () => {
 
     // 実行前の配列スナップショット（実配列のコピー）
     const beforeMessages = mockMessageItems.map((x) => ({ ...x }));
-    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({ ...x }));
+    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({
+      ...x,
+    }));
 
     // Act
     const result = await getMessagesLastHandler(mockHandlerArgs);
@@ -59,16 +60,20 @@ describe("GetMessagesLastHandler", () => {
     expect(responseBody).toHaveProperty("isGetAll");
     expect(Array.isArray(responseBody.data)).toBe(true);
     expect(typeof responseBody.isGetAll).toBe("boolean");
-    
+
     // lastNumber(10) >= max(4) の場合の実動作を検証
     expect(responseBody.data).toHaveLength(0); // 新しいメッセージなし
     expect(responseBody.isGetAll).toBe(true); // 全て取得済み状態
-    
+
     // ★ 実際のビジネスロジック検証：lastNumber > 最大MessageNo の場合の動作
-    const maxMessageNo = Math.max(...mockMessageItems.map(msg => msg.MessageNo));
+    const maxMessageNo = Math.max(
+      ...mockMessageItems.map((msg) => msg.MessageNo)
+    );
     expect(maxMessageNo).toBe(4); // モックデータの最大MessageNo確認
-    expect(parseInt(mockHandlerArgs.params.lastNumber)).toBeGreaterThan(maxMessageNo);
-    
+    expect(parseInt(mockHandlerArgs.params.lastNumber)).toBeGreaterThan(
+      maxMessageNo
+    );
+
     // ★ ahead状態（lastNumber > maxMessageNo）で空配列とisGetAll=trueが正しく返される
 
     // ★ DynamoDBのモック配列が一切変化していないことを確認（データ整合性チェック）
@@ -91,7 +96,9 @@ describe("GetMessagesLastHandler", () => {
 
     // 実行前の配列スナップショット
     const beforeMessages = mockMessageItems.map((x) => ({ ...x }));
-    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({ ...x }));
+    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({
+      ...x,
+    }));
 
     // Act
     const result = await getMessagesLastHandler(mockHandlerArgs);
@@ -119,7 +126,9 @@ describe("GetMessagesLastHandler", () => {
 
     // 実行前の配列スナップショット
     const beforeMessages = mockMessageItems.map((x) => ({ ...x }));
-    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({ ...x }));
+    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({
+      ...x,
+    }));
 
     // Act
     const result = await getMessagesLastHandler(mockHandlerArgs);
@@ -147,7 +156,9 @@ describe("GetMessagesLastHandler", () => {
 
     // 実行前の配列スナップショット
     const beforeMessages = mockMessageItems.map((x) => ({ ...x }));
-    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({ ...x }));
+    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({
+      ...x,
+    }));
 
     // Act
     const result = await getMessagesLastHandler(mockHandlerArgs);
@@ -158,12 +169,14 @@ describe("GetMessagesLastHandler", () => {
     const responseBody = JSON.parse(result.body);
     expect(responseBody).toHaveProperty("data");
     expect(responseBody).toHaveProperty("isGetAll");
-    
+
     // lastNumber(2) より大きいMessageNo（=3,4）が取得される
     expect(responseBody.data).toHaveLength(2);
-    const messageNos = responseBody.data.map((msg: any) => msg.MessageNo).sort();
+    const messageNos = responseBody.data
+      .map((msg: any) => msg.MessageNo)
+      .sort();
     expect(messageNos).toEqual([3, 4]);
-    
+
     // 部分取得なのでisGetAllはtrue（全て取得した）
     expect(responseBody.isGetAll).toBe(true);
 
@@ -187,7 +200,9 @@ describe("GetMessagesLastHandler", () => {
 
     // 実行前の配列スナップショット（空配列）
     const beforeMessages = mockMessageItems.map((x) => ({ ...x }));
-    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({ ...x }));
+    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({
+      ...x,
+    }));
 
     // Act
     const result = await getMessagesLastHandler(mockHandlerArgs);
@@ -221,7 +236,9 @@ describe("GetMessagesLastHandler", () => {
 
     // 実行前の配列スナップショット
     const beforeMessages = mockMessageItems.map((x) => ({ ...x }));
-    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({ ...x }));
+    const beforeMessageCounters = mockMessageCounterItems.map((x) => ({
+      ...x,
+    }));
 
     // Act
     const result = await getMessagesLastHandler(mockHandlerArgs);
@@ -232,27 +249,31 @@ describe("GetMessagesLastHandler", () => {
     const responseBody = JSON.parse(result.body);
     expect(responseBody).toHaveProperty("data");
     expect(Array.isArray(responseBody.data)).toBe(true);
-    
+
     // ★ 実際のビジネスロジック検証：lastNumber=2より新しいメッセージ（MessageNo 3,4）が取得される
     expect(responseBody.data).toHaveLength(2); // MessageNo 3,4の2件
-    
-    const messageNos = responseBody.data.map((msg: any) => msg.MessageNo).sort((a: number, b: number) => a - b);
+
+    const messageNos = responseBody.data
+      .map((msg: any) => msg.MessageNo)
+      .sort((a: number, b: number) => a - b);
     expect(messageNos).toEqual([3, 4]); // lastNumber(2)より大きいMessageNoのみ
-    
+
     // ★ 各メッセージの内容検証（実際のモックデータとの整合性）
     const msg3 = responseBody.data.find((msg: any) => msg.MessageNo === 3);
     const msg4 = responseBody.data.find((msg: any) => msg.MessageNo === 4);
-    
+
     expect(msg3).toBeDefined();
     expect(msg4).toBeDefined();
     expect(msg3.UserId).toBe("user123"); // モックデータの実際の値
     expect(msg4.UserId).toBe("user789"); // モックデータの実際の値
-    
+
     // ★ isGetAllフラグの正確性検証：lastNumber=2で最新まで取得したのでtrue
     expect(responseBody.isGetAll).toBe(true);
-    
+
     // ★ lastNumber=2より小さいMessageNo（1,2）は含まれないことを確認
-    const shouldNotInclude = responseBody.data.filter((msg: any) => msg.MessageNo <= 2);
+    const shouldNotInclude = responseBody.data.filter(
+      (msg: any) => msg.MessageNo <= 2
+    );
     expect(shouldNotInclude).toHaveLength(0);
 
     // ★ DynamoDBのモック配列が変化していないことを確認（データ整合性チェック）
